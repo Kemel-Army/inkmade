@@ -34,10 +34,14 @@ export default defineNuxtConfig({
 
   // §2.3 фирменные шрифты. Permanent Marker — только латиница/заголовки.
   fonts: {
+    // кириллица нужна и телу (Manrope), и дисплейной кириллице (Oswald)
+    defaults: { subsets: ['latin', 'cyrillic'] },
     families: [
       { name: 'Manrope', provider: 'google' },
       { name: 'Space Mono', provider: 'google' },
       { name: 'Permanent Marker', provider: 'google' },
+      // кириллический дисплейный шрифт (H12): латиница → Permanent Marker, кириллица → Oswald
+      { name: 'Oswald', provider: 'google' },
     ],
   },
 
