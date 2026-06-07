@@ -12,6 +12,29 @@ const transformerRef = ref<{ getNode: () => any } | null>(null)
 
 const stageConfig = { width: CANVAS.width, height: CANVAS.height }
 
+// ── адаптивность: холст фиксирован в пикселях CANVAS, на узких экранах
+// масштабируем CSS-трансформом. Konva сам пересчитывает координаты указателя
+// по getBoundingClientRect, поэтому вся внутренняя геометрия не меняется (§7, мобайл).
+const frameRef = ref<HTMLElement | null>(null)
+const scale = ref(1)
+function recomputeScale() {
+  const avail = frameRef.value?.clientWidth ?? CANVAS.width
+  scale.value = Math.min(1, avail / CANVAS.width)
+}
+let ro: ResizeObserver | null = null
+onMounted(() => {
+  recomputeScale()
+  if (typeof ResizeObserver !== 'undefined' && frameRef.value) {
+    ro = new ResizeObserver(recomputeScale)
+    ro.observe(frameRef.value)
+  }
+  window.addEventListener('resize', recomputeScale)
+})
+onBeforeUnmount(() => {
+  ro?.disconnect()
+  window.removeEventListener('resize', recomputeScale)
+})
+
 // ── загрузка изображений (мокап + принты) ─────────────────────────
 const images = reactive<Record<string, HTMLImageElement>>({})
 const tick = ref(0) // форсируем перерисовку при onload
@@ -153,8 +176,16 @@ onBeforeUnmount(() => registerStage(null))
 </script>
 
 <template>
-  <div class="inline-block rounded-lg overflow-hidden shadow-md bg-ink-white">
-    <v-stage ref="stageRef" :config="stageConfig" @click="onStageClick" @tap="onStageClick">
+  <div
+    ref="frameRef"
+    class="w-full mx-auto"
+    :style="{ maxWidth: CANVAS.width + 'px', height: (CANVAS.height * scale) + 'px' }"
+  >
+    <div
+      class="rounded-lg overflow-hidden shadow-md bg-ink-white"
+      :style="{ width: CANVAS.width + 'px', height: CANVAS.height + 'px', transform: `scale(${scale})`, transformOrigin: 'top left' }"
+    >
+      <v-stage ref="stageRef" :config="stageConfig" @click="onStageClick" @tap="onStageClick">
       <v-layer>
         <v-rect :config="bgConfig" />
         <v-image v-if="mockupConfig" :config="mockupConfig" />
@@ -181,6 +212,7 @@ onBeforeUnmount(() => registerStage(null))
 
         <v-transformer ref="transformerRef" :config="{ rotateEnabled: true, borderStroke: '#7A1F28', anchorStroke: '#7A1F28' }" />
       </v-layer>
-    </v-stage>
+      </v-stage>
+    </div>
   </div>
 </template>

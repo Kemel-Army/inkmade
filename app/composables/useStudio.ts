@@ -22,7 +22,7 @@ export const useStudio = () => {
       .from('orders')
       .select(`*,
         order_items(*,
-          designs(spec, original_url, preview_url),
+          designs(id, spec, original_url, preview_url, moderation_status),
           variants(color_name, color_hex, size, sku, products(title), materials(name, print_method, print_mode))
         ),
         order_status_log(*)`)
@@ -30,6 +30,11 @@ export const useStudio = () => {
       .single()
     if (error) throw error
     return data
+  }
+
+  /** Модерация дизайна (P2.14) — серверный эндпоинт со staff-проверкой. */
+  async function moderateDesign(designId: string, status: 'approved' | 'rejected') {
+    return $fetch(`/api/designs/${designId}/moderation`, { method: 'POST', body: { status } })
   }
 
   /** Смена статуса через серверный эндпоинт (валидация автомата §8.5). */
@@ -46,5 +51,5 @@ export const useStudio = () => {
     return () => { supabase.removeChannel(channel) }
   }
 
-  return { listQueue, getOrder, changeStatus, subscribe }
+  return { listQueue, getOrder, changeStatus, moderateDesign, subscribe }
 }

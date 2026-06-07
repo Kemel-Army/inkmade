@@ -55,4 +55,34 @@ export default defineNuxtConfig({
       ],
     },
   },
+
+  // Заголовки безопасности (P2.12). CSP подобрана так, чтобы не ломать:
+  // Supabase REST/Realtime (wss), Google Fonts, Konva (canvas), пиксели Meta/TikTok/GA.
+  // Nuxt-гидрация требует 'unsafe-inline' в script-src (inline payload).
+  nitro: {
+    routeRules: {
+      '/**': {
+        headers: {
+          'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+          'X-Content-Type-Options': 'nosniff',
+          'X-Frame-Options': 'DENY',
+          'Referrer-Policy': 'strict-origin-when-cross-origin',
+          'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+          'Content-Security-Policy': [
+            "default-src 'self'",
+            "base-uri 'self'",
+            "object-src 'none'",
+            "frame-ancestors 'none'",
+            "form-action 'self'",
+            "img-src 'self' data: blob: https:",
+            "font-src 'self' data: https://fonts.gstatic.com",
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+            "script-src 'self' 'unsafe-inline' https://connect.facebook.net https://analytics.tiktok.com https://www.googletagmanager.com https://www.google-analytics.com",
+            "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.facebook.com https://analytics.tiktok.com https://www.google-analytics.com",
+            "frame-src 'self'",
+          ].join('; '),
+        },
+      },
+    },
+  },
 })

@@ -48,8 +48,9 @@ async function pay() {
       Оплатить (демо)
     </UButton>
     <UButton to="/cart" color="neutral" variant="ghost" block>Отмена</UButton>
-    <p class="text-caption text-ink-gray-400">
-      Это заглушка. Реальная карта/Kaspi подключаются через ту же серверную абстракцию.
+    <p class="text-caption text-ink-gray-400 flex items-center justify-center gap-1.5">
+      <UIcon name="i-lucide-shield-check" class="shrink-0" />
+      Тестовый режим оплаты. Оплата картой и Kaspi подключаются на запуске.
     </p>
   </section>
 </template>

@@ -1,6 +1,31 @@
 <script setup lang="ts">
 // Лендинг (§6). Визуальный язык референса, бизнес-логика — B2C self-service.
-useHead({ title: 'INKMADE — печать своего принта на одежде' })
+const { public: { siteUrl } } = useRuntimeConfig()
+const site = (siteUrl as string) || 'https://inkmade-pi.vercel.app'
+
+useSeoMeta({
+  title: 'INKMADE — печать своего принта на одежде',
+  description: 'Собери свой принт прямо в браузере, увидь цену сразу и закажи от одной штуки. Печать по требованию (DTG/DTF/сублимация), доставка по Казахстану.',
+  ogTitle: 'INKMADE — твой принт, твоя вещь',
+  ogDescription: 'Конструктор принта в браузере, цена сразу, тираж от одной штуки. Доставка по Казахстану.',
+  ogType: 'website',
+  ogUrl: site,
+})
+
+// JSON-LD (P3.20): организация для поисковой выдачи и соцпревью.
+useHead({
+  script: [{
+    type: 'application/ld+json',
+    innerHTML: JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'Organization',
+      name: 'INKMADE',
+      url: site,
+      description: 'Платформа кастомизации одежды с печатью по требованию. Казахстан.',
+      areaServed: 'KZ',
+    }),
+  }],
+})
 
 const { listAll } = useCatalog()
 const { data: examples } = await useAsyncData('landing-examples', () => listAll())
@@ -57,6 +82,7 @@ function primaryImage(p: { product_images?: { url: string; is_primary: boolean }
 
     <LandingMethods />
     <LandingHowItWorks />
+    <LandingTrust />
     <LandingFaq />
   </div>
 </template>

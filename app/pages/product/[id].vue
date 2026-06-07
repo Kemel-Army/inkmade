@@ -22,6 +22,30 @@ useSeoMeta({
   ogImage,
 })
 
+// Product JSON-LD (P3.20) — структурированные данные для поиска/соцпревью.
+const priceFromLd = computed(() =>
+  product.value!.base_price + (product.value!.materials[0]?.surcharge ?? 0),
+)
+useHead({
+  script: [{
+    type: 'application/ld+json',
+    innerHTML: computed(() => JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'Product',
+      name: product.value!.title,
+      description: product.value!.description || `${product.value!.title} с печатью вашего принта.`,
+      image: ogImage ? [ogImage] : undefined,
+      brand: { '@type': 'Brand', name: 'INKMADE' },
+      offers: {
+        '@type': 'Offer',
+        price: priceFromLd.value,
+        priceCurrency: 'KZT',
+        availability: 'https://schema.org/InStock',
+      },
+    })),
+  }],
+})
+
 // первое звено воронки — просмотр товара (§3.5.1)
 onMounted(() => useAnalytics().viewContent(product.value!.id))
 

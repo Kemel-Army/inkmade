@@ -51,6 +51,7 @@ export type Database = {
           created_at: string
           id: string
           is_saved: boolean
+          moderation_status: string
           original_url: string | null
           preview_url: string | null
           print_file_url: string | null
@@ -64,6 +65,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_saved?: boolean
+          moderation_status?: string
           original_url?: string | null
           preview_url?: string | null
           print_file_url?: string | null
@@ -77,6 +79,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_saved?: boolean
+          moderation_status?: string
           original_url?: string | null
           preview_url?: string | null
           print_file_url?: string | null
@@ -475,7 +478,15 @@ export type Database = {
           slug?: string
           title?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "products_category_fkey"
+            columns: ["category"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["slug"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -639,19 +650,16 @@ export type Database = {
         Returns: number
       }
       admin_list_users: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
-          id: string
-          email: string
-          role: string
-          full_name: string | null
           created_at: string
+          email: string
+          full_name: string
+          id: string
+          role: string
         }[]
       }
-      admin_stats: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
+      admin_stats: { Args: never; Returns: Json }
       apply_paid: {
         Args: { p_order_id: string; p_provider_txn: string; p_raw: Json }
         Returns: Json

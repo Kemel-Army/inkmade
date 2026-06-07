@@ -2,6 +2,7 @@ import { serverSupabaseUser, serverSupabaseServiceRole } from '#supabase/server'
 import type { Database } from '~/types/database.types'
 import type { OrderStatus } from '~~/shared/config/order-status'
 import { isValidTransition, REASON_REQUIRED } from '~~/shared/config/order-status'
+import { notifyOrder } from '~~/server/utils/email'
 
 // Серверная смена статуса (§8.5): проверка роли, валидация перехода по автомату (§5.3),
 // запись orders.status + order_status_log. Недопустимые переходы невозможны.
@@ -35,6 +36,21 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Нужны трек-номер и перевозчик' })
   }
 
+  // Гейт модерации (P2.14, §24): в печать — только если все дизайны заказа одобрены.
+  if (to === 'printing') {
+    const { data: rows } = await svc
+      .from('order_items')
+      .select('designs(moderation_status)')
+      .eq('order_id', orderId)
+    const blocked = (rows ?? []).some((r) => {
+      const d = r.designs as { moderation_status?: string } | null
+      return d?.moderation_status !== 'approved'
+    })
+    if (blocked) {
+      throw createError({ statusCode: 400, statusMessage: 'Нельзя в печать: есть непромодерированные дизайны' })
+    }
+  }
+
   // атомарная запись статуса + лога + складских эффектов (аудит C6/H4):
   // одна транзакция + advisory lock; возврат заготовки только если заказ не доходил до printing.
   const { error: rpcErr } = await svc.rpc('change_order_status', {
@@ -46,6 +62,10 @@ export default defineEventHandler(async (event) => {
     p_carrier: body.carrier ?? '',
   })
   if (rpcErr) throw createError({ statusCode: 500, statusMessage: rpcErr.message })
+
+  // уведомления клиенту на ключевых статусах (P1.7), best-effort
+  if (to === 'shipped') await notifyOrder(svc, orderId, 'shipped', { trackingNo: body.trackingNo, carrier: body.carrier })
+  else if (to === 'delivered') await notifyOrder(svc, orderId, 'delivered')
 
   return { ok: true, from, to }
 })

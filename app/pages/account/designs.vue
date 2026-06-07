@@ -12,6 +12,26 @@ const { data: designs, pending } = await useAsyncData('account-designs', async (
     .order('created_at', { ascending: false })
   return data
 })
+
+const toast = useToast()
+const sharingId = ref<string | null>(null)
+
+async function share(id: string) {
+  if (sharingId.value) return
+  sharingId.value = id
+  try {
+    const { token } = await $fetch<{ token: string }>(`/api/designs/${id}/share`, { method: 'POST' })
+    const url = `${window.location.origin}/design/${token}`
+    try {
+      if (navigator.share) await navigator.share({ title: 'Мой дизайн на INKMADE', url })
+      else { await navigator.clipboard.writeText(url); toast.add({ title: 'Ссылка скопирована', color: 'success' }) }
+    } catch { /* пользователь отменил системный шэр — не ошибка */ }
+  } catch (e) {
+    toast.add({ title: 'Не удалось создать ссылку', description: (e as Error).message, color: 'error' })
+  } finally {
+    sharingId.value = null
+  }
+}
 </script>
 
 <template>
@@ -30,9 +50,17 @@ const { data: designs, pending } = await useAsyncData('account-designs', async (
           <img v-if="d.preview_url" :src="d.preview_url" alt="" class="w-full h-full object-cover">
           <UIcon v-else name="i-lucide-shapes" class="size-8 text-ink-gray-400" />
         </div>
-        <div class="p-3">
+        <div class="p-3 space-y-2">
           <p class="text-caption font-semibold truncate">{{ d.products?.title }}</p>
-          <NuxtLink v-if="d.products?.alias" :to="`/customize/${d.products.alias}`" class="text-caption text-ink-burgundy">Открыть в конструкторе</NuxtLink>
+          <div class="flex items-center justify-between gap-2">
+            <NuxtLink v-if="d.products?.alias" :to="`/customize/${d.products.alias}`" class="text-caption text-ink-burgundy">Открыть</NuxtLink>
+            <UButton
+              size="xs" color="neutral" variant="ghost" icon="i-lucide-share-2"
+              :loading="sharingId === d.id" @click="share(d.id)"
+            >
+              Поделиться
+            </UButton>
+          </div>
         </div>
       </div>
     </div>

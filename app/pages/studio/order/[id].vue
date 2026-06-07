@@ -7,8 +7,29 @@ definePageMeta({ layout: 'studio', middleware: 'studio-role' })
 
 const route = useRoute()
 const id = route.params.id as string
-const { getOrder, changeStatus } = useStudio()
+const { getOrder, changeStatus, moderateDesign } = useStudio()
 const toast = useToast()
+
+const MODERATION_LABELS: Record<string, string> = {
+  pending: 'На модерации',
+  approved: 'Одобрено',
+  rejected: 'Отклонено',
+}
+const moderatingId = ref<string | null>(null)
+
+async function moderate(designId: string | undefined, status: 'approved' | 'rejected') {
+  if (!designId || moderatingId.value) return
+  moderatingId.value = designId
+  try {
+    await moderateDesign(designId, status)
+    toast.add({ title: `Дизайн: ${MODERATION_LABELS[status]}`, color: status === 'approved' ? 'success' : 'warning' })
+    await refresh()
+  } catch (e) {
+    toast.add({ title: 'Ошибка модерации', description: (e as { data?: { message?: string } }).data?.message ?? (e as Error).message, color: 'error' })
+  } finally {
+    moderatingId.value = null
+  }
+}
 
 const { data: order, refresh } = await useAsyncData(`studio-order-${id}`, () => getOrder(id))
 
@@ -84,6 +105,30 @@ function specPlacements(item: { designs?: { spec?: unknown } | null }) {
             <a v-if="it.designs?.original_url" :href="it.designs.original_url" target="_blank" class="text-caption text-ink-burgundy inline-flex items-center gap-1 mt-2">
               <UIcon name="i-lucide-download" class="size-3" /> Оригинал
             </a>
+          </div>
+
+          <!-- модерация загрузки (P2.14): без approved заказ не уйдёт в печать -->
+          <div v-if="it.designs" class="mt-3 flex flex-wrap items-center gap-2">
+            <UBadge
+              :color="it.designs.moderation_status === 'approved' ? 'success' : it.designs.moderation_status === 'rejected' ? 'error' : 'warning'"
+              variant="subtle"
+            >
+              {{ MODERATION_LABELS[it.designs.moderation_status] ?? it.designs.moderation_status }}
+            </UBadge>
+            <UButton
+              v-if="it.designs.moderation_status !== 'approved'"
+              size="xs" color="success" variant="subtle" icon="i-lucide-check"
+              :loading="moderatingId === it.designs.id" @click="moderate(it.designs?.id, 'approved')"
+            >
+              Одобрить
+            </UButton>
+            <UButton
+              v-if="it.designs.moderation_status !== 'rejected'"
+              size="xs" color="error" variant="ghost" icon="i-lucide-x"
+              :loading="moderatingId === it.designs.id" @click="moderate(it.designs?.id, 'rejected')"
+            >
+              Отклонить
+            </UButton>
           </div>
         </div>
 

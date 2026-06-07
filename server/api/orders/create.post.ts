@@ -21,6 +21,7 @@ interface SpecPlacement {
 interface DesignSpec {
   placements?: SpecPlacement[]
   print_mode?: PrintMode
+  composition_url?: string
 }
 interface IncomingItem {
   productId: string
@@ -124,7 +125,14 @@ export default defineEventHandler(async (event) => {
 
   for (const { item, unitPrice } of priced) {
     const { data: design, error: dErr } = await svc.from('designs')
-      .insert({ user_id: uid, product_id: item.productId, variant_id: item.variantId, spec: item.spec as unknown as Json })
+      .insert({
+        user_id: uid,
+        product_id: item.productId,
+        variant_id: item.variantId,
+        spec: item.spec as unknown as Json,
+        // превью «для глаз» из скриншота композиции (§13.2) — для галереи и шаринга
+        preview_url: item.spec?.composition_url ?? null,
+      })
       .select('id').single()
     if (dErr || !design) throw createError({ statusCode: 500, statusMessage: 'Не удалось сохранить дизайн' })
 

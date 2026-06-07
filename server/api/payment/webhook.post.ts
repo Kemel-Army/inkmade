@@ -2,6 +2,7 @@ import { createHmac, timingSafeEqual } from 'node:crypto'
 import { serverSupabaseServiceRole } from '#supabase/server'
 import type { Database } from '~/types/database.types'
 import { applyPaid } from '~~/server/utils/payment'
+import { notifyOrder } from '~~/server/utils/email'
 
 // ЕДИНСТВЕННЫЙ триггер paid (§10, инвариант 2). Проверка подписи обязательна.
 // Редирект пользователя НЕ является подтверждением оплаты.
@@ -25,5 +26,7 @@ export default defineEventHandler(async (event) => {
 
   const svc = serverSupabaseServiceRole<Database>(event)
   const result = await applyPaid(svc, payload.orderId, payload.providerTxn || 'unknown', payload)
+  // письмо «принят в работу» только на первом успешном переходе (не на повторном webhook)
+  if (!result.alreadyPaid) await notifyOrder(svc, payload.orderId, 'paid')
   return { ok: true, ...result }
 })
