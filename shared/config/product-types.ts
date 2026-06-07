@@ -15,12 +15,23 @@ export const TEXTILE_COLORS: ColorOption[] = [
   { name: 'Чёрный', hex: '#111111', is_dark: true },
   { name: 'Белый', hex: '#FBF8F2', is_dark: false },
   { name: 'Серый меланж', hex: '#9A9A9A', is_dark: false },
+  { name: 'Тёмно-серый', hex: '#4A4A4A', is_dark: true },
   { name: 'Бордо', hex: '#7A1F28', is_dark: true },
+  { name: 'Красный', hex: '#C0392B', is_dark: true },
   { name: 'Бежевый', hex: '#EFE0C1', is_dark: false },
+  { name: 'Песочный', hex: '#D2B48C', is_dark: false },
   { name: 'Тёмно-синий', hex: '#1E2A44', is_dark: true },
+  { name: 'Синий', hex: '#2E5FA3', is_dark: true },
+  { name: 'Зелёный бутылочный', hex: '#1F4D3A', is_dark: true },
+  { name: 'Хаки', hex: '#6B6B47', is_dark: true },
+  { name: 'Жёлтый', hex: '#E4B400', is_dark: false },
+  { name: 'Розовый', hex: '#D98EA4', is_dark: false },
 ]
 
-const CORE = TEXTILE_COLORS.slice(0, 4) // чёрный/белый/серый/бордо — для стартовых вариантов
+// Стартовый набор для вариантов из шаблона (8 ходовых цветов).
+const CORE = TEXTILE_COLORS.filter(c =>
+  ['Чёрный', 'Белый', 'Серый меланж', 'Бордо', 'Красный', 'Тёмно-синий', 'Зелёный бутылочный', 'Бежевый'].includes(c.name),
+)
 
 export interface ProductTypeTemplate {
   key: string

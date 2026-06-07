@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { ProductWithRelations } from '~/types/models'
+import { TEXTILE_COLORS } from '~~/shared/config/product-types'
 
 // Шаг 3 — Варианты (§8.2.1): матрица цвет × размер → генерация вариантов + SKU.
 const props = defineProps<{ product: ProductWithRelations }>()
@@ -7,6 +8,17 @@ const emit = defineEmits<{ changed: [] }>()
 
 const { generateVariants, deleteVariant } = useAdmin()
 const toast = useToast()
+
+// нормализация HEX: принимаем #abc / abc / #aabbcc → #aabbcc (как палитра по номеру в Canva)
+function normalizeHex(v: string): string | null {
+  let s = v.trim().toLowerCase()
+  if (!s.startsWith('#')) s = '#' + s
+  if (/^#[0-9a-f]{3}$/.test(s)) s = '#' + s.slice(1).split('').map(c => c + c).join('')
+  return /^#[0-9a-f]{6}$/.test(s) ? s : null
+}
+function presetName(hex: string): string | undefined {
+  return TEXTILE_COLORS.find(c => c.hex.toLowerCase() === hex.toLowerCase())?.name
+}
 
 const materialItems = computed(() =>
   props.product.materials.map(m => ({ label: m.name, value: m.id })),
@@ -22,11 +34,26 @@ const form = reactive({
 const newColor = reactive({ name: '', hex: '#111111' })
 const newSize = ref('')
 
+// ручной ввод HEX («номер цвета через решётку») синхронит и пикер
+function onHexInput(v: string) {
+  const n = normalizeHex(v)
+  if (n) {
+    newColor.hex = n
+    if (!newColor.name) newColor.name = presetName(n) ?? ''
+  }
+}
+
 function addColor() {
-  if (!newColor.name) return
-  form.colors.push({ name: newColor.name, hex: newColor.hex })
+  const hex = normalizeHex(newColor.hex)
+  if (!hex) { toast.add({ title: 'Неверный HEX', description: 'Формат #RRGGBB, напр. #1E2A44', color: 'warning' }); return }
+  if (form.colors.some(c => c.hex.toLowerCase() === hex)) { toast.add({ title: 'Цвет уже добавлен', color: 'warning' }); return }
+  form.colors.push({ name: newColor.name.trim() || presetName(hex) || hex.toUpperCase(), hex })
   newColor.name = ''
   newColor.hex = '#111111'
+}
+function addPreset(c: { name: string; hex: string }) {
+  if (form.colors.some(x => x.hex.toLowerCase() === c.hex.toLowerCase())) return
+  form.colors.push({ name: c.name, hex: c.hex })
 }
 function removeColor(i: number) { form.colors.splice(i, 1) }
 
@@ -105,9 +132,36 @@ async function onDelete(id: string) {
                 <UButton color="error" variant="ghost" size="xs" icon="i-lucide-x" @click="removeColor(i)" />
               </span>
             </div>
+
+            <!-- быстрая палитра: клик добавляет цвет -->
+            <p class="text-label ink-label text-ink-gray-400 mt-1 mb-1">Палитра</p>
+            <div class="flex flex-wrap gap-1.5 mb-3">
+              <button
+                v-for="c in TEXTILE_COLORS"
+                :key="c.hex"
+                type="button"
+                :title="`${c.name} · ${c.hex}`"
+                class="size-6 rounded-full border-2 border-ink-gray-200 hover:scale-110 transition-transform"
+                :style="{ backgroundColor: c.hex }"
+                @click="addPreset(c)"
+              />
+            </div>
+
+            <!-- ввод по номеру цвета (#RRGGBB), как в Canva -->
             <div class="flex gap-2 items-end">
-              <UFormField label="Название"><UInput v-model="newColor.name" placeholder="Чёрный" /></UFormField>
-              <UFormField label="HEX"><UInput v-model="newColor.hex" type="color" class="w-16 p-1" /></UFormField>
+              <UFormField label="HEX-номер">
+                <UInput
+                  :model-value="newColor.hex" placeholder="#1E2A44" class="w-28 font-mono"
+                  @update:model-value="onHexInput"
+                  @keydown.enter.prevent="addColor"
+                />
+              </UFormField>
+              <UFormField label="Пипетка">
+                <UInput v-model="newColor.hex" type="color" class="w-12 p-1" />
+              </UFormField>
+              <UFormField label="Название (необяз.)">
+                <UInput v-model="newColor.name" placeholder="авто по HEX" />
+              </UFormField>
               <UButton color="neutral" variant="subtle" icon="i-lucide-plus" @click="addColor" />
             </div>
           </div>

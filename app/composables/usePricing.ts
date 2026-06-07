@@ -1,4 +1,5 @@
 import { calcPrice } from '~~/shared/config/pricing'
+import { METHOD_SURCHARGE, type PrintMethod } from '~~/shared/config/print-methods'
 
 // Реактивная цена = функция от текущего состояния useDesign (§5.5).
 // Пересчитывается при любом изменении дизайна.
@@ -8,6 +9,7 @@ export const usePricing = () => {
   const breakdown = computed(() => {
     const basePrice = product.value?.base_price ?? 0
     const materialSurcharge = material.value?.surcharge ?? 0
+    const methodSurcharge = METHOD_SURCHARGE[material.value?.print_method as PrintMethod] ?? 0
     const z = zone.value
     const zoneAreaMm2 = (Number(z?.max_width_mm) || 0) * (Number(z?.max_height_mm) || 0)
 
@@ -21,7 +23,7 @@ export const usePricing = () => {
       ? [{ mode: printMode.value, printAreaMm2, zoneAreaMm2 }]
       : []
 
-    return calcPrice({ basePrice, materialSurcharge, zones, hasText: hasText.value, quantity: 1 })
+    return calcPrice({ basePrice, materialSurcharge, methodSurcharge, zones, hasText: hasText.value, quantity: 1 })
   })
 
   return { breakdown }

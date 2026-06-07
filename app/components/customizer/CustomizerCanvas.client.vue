@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { CANVAS, useDesign } from '~/composables/useDesign'
 import type { Placement } from '~/composables/useDesign'
+import { garmentKindForSlug, garmentDataUri } from '~~/shared/config/garment'
 
 // Холст кастомайзера (§7.1, §7.4). Только клиент (vue-konva plugin .client).
-// Нейтральная подложка = цвет изделия (перекраска в реальном времени).
-// Принт ограничен границами зоны (§7.1 — нельзя вынести за зону).
-const { zoneRect, placements, selectedId, productColorHex, updatePlacement, zone, registerStage } = useDesign()
+// Базовый слой — силуэт изделия выбранного цвета (мокап), принт рисуется НА нём
+// в пределах зоны (§7.1 — нельзя вынести за зону).
+const { product, zoneRect, placements, selectedId, productColorHex, updatePlacement, zone, registerStage } = useDesign()
 
 const stageRef = ref<{ getNode: () => any } | null>(null)
 const transformerRef = ref<{ getNode: () => any } | null>(null)
@@ -55,11 +56,30 @@ watchEffect(() => {
 
 const mockupImage = computed(() => { void tick.value; return mockupUrl.value ? images['__mockup__'] : null })
 
+// ── силуэт изделия (мокап) выбранного цвета — перекрашивается мгновенно ──
+const garmentKind = computed(() => garmentKindForSlug(product.value?.slug ?? product.value?.alias))
+const garmentUri = computed(() => garmentDataUri(garmentKind.value, productColorHex.value))
+const garmentImg = ref<HTMLImageElement | null>(null)
+watch(garmentUri, (uri) => {
+  if (!uri) { garmentImg.value = null; return }
+  const img = new window.Image()
+  img.onload = () => { garmentImg.value = img; tick.value++ }
+  img.src = uri // data-URI: не тейнтит canvas (важно для скриншота композиции)
+}, { immediate: true })
+
 // ── конфиги слоёв ─────────────────────────────────────────────────
+// нейтральный студийный фон (не цвет изделия — цвет несёт сам силуэт)
 const bgConfig = computed(() => ({
   x: 0, y: 0, width: CANVAS.width, height: CANVAS.height,
-  fill: productColorHex.value, listening: false,
+  fill: '#efe9df', listening: false,
 }))
+
+const garmentConfig = computed(() => {
+  void tick.value
+  const img = garmentImg.value
+  if (!img) return null
+  return { image: img, x: 0, y: 0, width: CANVAS.width, height: CANVAS.height, listening: false }
+})
 
 const mockupConfig = computed(() => {
   const img = mockupImage.value
@@ -188,6 +208,7 @@ onBeforeUnmount(() => registerStage(null))
       <v-stage ref="stageRef" :config="stageConfig" @click="onStageClick" @tap="onStageClick">
       <v-layer>
         <v-rect :config="bgConfig" />
+        <v-image v-if="garmentConfig" :config="garmentConfig" />
         <v-image v-if="mockupConfig" :config="mockupConfig" />
         <v-rect :config="zoneFrameConfig" />
 

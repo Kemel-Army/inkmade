@@ -1,29 +1,41 @@
 <script setup lang="ts">
 // Текстовый инструмент (§7.1) — полноценный модуль под бренд (граффити-шрифт).
+import { PRINT_FONTS, isCyrillicFont } from '~~/shared/config/print-fonts'
+
 const { addText } = useDesign()
+const { load: loadFont } = useFontLoader()
 const toast = useToast()
 
-const FONTS = [
-  { label: 'Permanent Marker (граффити, латиница)', value: 'Permanent Marker' },
-  { label: 'Manrope (кириллица)', value: 'Manrope' },
-  { label: 'Space Mono', value: 'Space Mono' },
-]
+// ~200 шрифтов; грузим выбранный по требованию (useFontLoader), не предзагружаем все.
+const fontItems = PRINT_FONTS.map(f => f.name)
 
 const form = reactive({
   text: '',
-  fontFamily: 'Permanent Marker',
+  fontFamily: 'Manrope',
   fill: '#111111',
 })
 
-function onAdd() {
+const adding = ref(false)
+
+// подгружаем шрифт сразу при выборе — чтобы превью/добавление было готово
+watch(() => form.fontFamily, (f) => { if (f) loadFont(f) })
+
+async function onAdd() {
   const t = form.text.trim()
   if (!t) { toast.add({ title: 'Введите текст', color: 'warning' }); return }
-  // кириллица граффити-шрифтом нечитаема (§2.3) — подсказка
-  if (form.fontFamily === 'Permanent Marker' && /[а-яё]/i.test(t)) {
-    toast.add({ title: 'Кириллица + граффити-шрифт', description: 'Permanent Marker — для латиницы. Для кириллицы выберите Manrope.', color: 'warning' })
+  // кириллица шрифтом без кириллических глифов нечитаема (§2.3) — подсказка
+  if (!isCyrillicFont(form.fontFamily) && /[а-яё]/i.test(t)) {
+    toast.add({ title: 'Шрифт без кириллицы', description: `«${form.fontFamily}» рассчитан на латиницу. Для кириллицы выберите другой шрифт.`, color: 'warning' })
   }
-  addText(t, form.fontFamily, form.fill)
-  form.text = ''
+  adding.value = true
+  try {
+    // Konva рисует на canvas — шрифт должен быть загружен ДО отрисовки, иначе fallback.
+    await loadFont(form.fontFamily)
+    addText(t, form.fontFamily, form.fill)
+    form.text = ''
+  } finally {
+    adding.value = false
+  }
 }
 </script>
 
@@ -32,9 +44,17 @@ function onAdd() {
     <UiSectionLabel>Текст</UiSectionLabel>
     <UInput v-model="form.text" placeholder="Имя или надпись" class="w-full" @keydown.enter.prevent="onAdd" />
     <div class="flex gap-2">
-      <USelect v-model="form.fontFamily" :items="FONTS" value-key="value" class="flex-1" />
+      <USelectMenu
+        v-model="form.fontFamily"
+        :items="fontItems"
+        :search-input="{ placeholder: 'Поиск шрифта…' }"
+        class="flex-1"
+      />
       <UInput v-model="form.fill" type="color" class="w-12 p-1" />
     </div>
-    <UButton color="neutral" variant="subtle" icon="i-lucide-type" block @click="onAdd">Добавить текст</UButton>
+    <p class="text-caption text-ink-gray-400" :style="{ fontFamily: `'${form.fontFamily}', sans-serif` }">
+      Превью: {{ form.text || 'Ваш текст' }}
+    </p>
+    <UButton color="neutral" variant="subtle" icon="i-lucide-type" block :loading="adding" @click="onAdd">Добавить текст</UButton>
   </div>
 </template>

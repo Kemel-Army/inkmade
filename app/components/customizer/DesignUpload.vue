@@ -8,7 +8,8 @@ const toast = useToast()
 const supabase = useSupabaseClient()
 
 const MAX_FILE_MB = 25
-const ACCEPT = '.png,.jpg,.jpeg,.svg,.pdf'
+// принимаем любое изображение (PNG/JPG/WEBP/GIF/AVIF/BMP/TIFF и т.д.) + вектор SVG/PDF
+const ACCEPT = 'image/*,.svg,.pdf'
 const busy = ref(false)
 const fileInput = ref<HTMLInputElement | null>(null)
 
@@ -102,7 +103,7 @@ async function onFile(e: Event) {
     <UButton color="primary" icon="i-lucide-upload" :loading="busy" block @click="fileInput?.click()">Загрузить принт</UButton>
     <input ref="fileInput" type="file" :accept="ACCEPT" class="hidden" @change="onFile">
     <p class="text-caption text-ink-gray-400 mt-2">
-      PNG, JPG, SVG, PDF · до {{ MAX_FILE_MB }} МБ. Минимум {{ DPI_MIN }} DPI на макс. размере, цель {{ DPI_TARGET }}.
+      Любое изображение (PNG, JPG, WEBP, GIF…), SVG или PDF · до {{ MAX_FILE_MB }} МБ. Минимум {{ DPI_MIN }} DPI на макс. размере, цель {{ DPI_TARGET }}.
     </p>
   </div>
 </template>

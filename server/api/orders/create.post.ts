@@ -1,6 +1,7 @@
 import { serverSupabaseUser, serverSupabaseServiceRole } from '#supabase/server'
 import type { Database, Json } from '~/types/database.types'
-import type { PrintMode } from '~~/shared/config/print-methods'
+import type { PrintMode, PrintMethod } from '~~/shared/config/print-methods'
+import { METHOD_SURCHARGE } from '~~/shared/config/print-methods'
 import { calcPrice } from '~~/shared/config/pricing'
 import { dpiAtMaxSize, DPI_MIN } from '~~/shared/config/zones'
 import { LEGAL } from '~~/shared/config/legal'
@@ -66,7 +67,7 @@ export default defineEventHandler(async (event) => {
     }
 
     const { data: material } = await svc.from('materials')
-      .select('surcharge, print_mode').eq('id', variant.material_id).single()
+      .select('surcharge, print_mode, print_method').eq('id', variant.material_id).single()
     if (!material) throw createError({ statusCode: 400, statusMessage: 'Материал не найден' })
 
     const placements = it.spec?.placements ?? []
@@ -105,6 +106,7 @@ export default defineEventHandler(async (event) => {
     const breakdown = calcPrice({
       basePrice: Number(product.base_price) || 0,
       materialSurcharge: Number(material.surcharge) || 0,
+      methodSurcharge: METHOD_SURCHARGE[material.print_method as PrintMethod] ?? 0,
       zones: [{ mode, printAreaMm2, zoneAreaMm2 }],
       hasText,
       quantity: 1,

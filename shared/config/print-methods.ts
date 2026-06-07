@@ -5,7 +5,7 @@
 //   synthetic → сублимация → fullprint (одна зона «вся поверхность»)
 
 export type FabricType = 'cotton' | 'synthetic'
-export type PrintMethod = 'dtg' | 'dtf' | 'sublimation'
+export type PrintMethod = 'dtg' | 'dtf' | 'silkscreen' | 'embroidery' | 'sublimation'
 export type PrintMode = 'zonal' | 'fullprint'
 
 export interface FabricRule {
@@ -20,7 +20,7 @@ export const FABRIC_RULES: Record<FabricType, FabricRule> = {
   cotton: {
     fabric: 'cotton',
     label: 'Хлопок',
-    methods: ['dtg', 'dtf'],
+    methods: ['dtg', 'dtf', 'silkscreen', 'embroidery'],
     mode: 'zonal',
   },
   synthetic: {
@@ -34,7 +34,20 @@ export const FABRIC_RULES: Record<FabricType, FabricRule> = {
 export const PRINT_METHOD_LABELS: Record<PrintMethod, string> = {
   dtg: 'DTG (прямая цифровая)',
   dtf: 'DTF (термоперенос)',
+  silkscreen: 'Шелкография (трафарет)',
+  embroidery: 'Вышивка',
   sublimation: 'Сублимация (full-print)',
+}
+
+// Надбавка за метод нанесения (₸), помимо себестоимости материала (§5.5).
+// DTG — базовый; DTF чуть дороже плёнкой; шелкография — настройка трафарета;
+// вышивка — самый дорогой ручной/машинный метод.
+export const METHOD_SURCHARGE: Record<PrintMethod, number> = {
+  dtg: 0,
+  dtf: 300,
+  silkscreen: 800,
+  embroidery: 1500,
+  sublimation: 0,
 }
 
 export const PRINT_MODE_LABELS: Record<PrintMode, string> = {

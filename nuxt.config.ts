@@ -34,7 +34,8 @@ export default defineNuxtConfig({
 
   // §2.3 фирменные шрифты. Permanent Marker — только латиница/заголовки.
   fonts: {
-    // кириллица нужна и телу (Manrope), и дисплейной кириллице (Oswald)
+    // только каркас UI/бренда. ~200 шрифтов принта грузятся по требованию
+    // (app/composables/useFontLoader.ts) — предзагрузка всех убила бы страницу.
     defaults: { subsets: ['latin', 'cyrillic'] },
     families: [
       { name: 'Manrope', provider: 'google' },

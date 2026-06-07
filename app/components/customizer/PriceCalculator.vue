@@ -10,6 +10,7 @@ const { breakdown } = usePricing()
     <dl class="space-y-1 text-caption text-ink-gray-600">
       <div class="flex justify-between"><dt>Изделие</dt><dd>{{ breakdown.base }} ₸</dd></div>
       <div v-if="breakdown.material" class="flex justify-between"><dt>Материал</dt><dd>+{{ breakdown.material }} ₸</dd></div>
+      <div v-if="breakdown.method" class="flex justify-between"><dt>Метод нанесения</dt><dd>+{{ breakdown.method }} ₸</dd></div>
       <div v-if="breakdown.print" class="flex justify-between"><dt>Печать</dt><dd>+{{ breakdown.print }} ₸</dd></div>
       <div v-if="breakdown.text" class="flex justify-between"><dt>Текст</dt><dd>+{{ breakdown.text }} ₸</dd></div>
     </dl>

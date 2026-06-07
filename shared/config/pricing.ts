@@ -28,6 +28,8 @@ export function zonePrintCost(mode: PrintMode, printAreaMm2: number, zoneAreaMm2
 export interface PriceInput {
   basePrice: number
   materialSurcharge: number
+  /** надбавка за метод нанесения (DTF/шелкография/вышивка), ₸ */
+  methodSurcharge?: number
   /** по каждой занятой зоне: режим + площадь принта (мм²) + площадь зоны (мм²) */
   zones: { mode: PrintMode; printAreaMm2: number; zoneAreaMm2: number }[]
   hasText: boolean
@@ -37,6 +39,7 @@ export interface PriceInput {
 export interface PriceBreakdown {
   base: number
   material: number
+  method: number
   print: number
   text: number
   unitPrice: number
@@ -47,10 +50,12 @@ export interface PriceBreakdown {
 export function calcPrice(input: PriceInput): PriceBreakdown {
   const print = input.zones.reduce((sum, z) => sum + zonePrintCost(z.mode, z.printAreaMm2, z.zoneAreaMm2), 0)
   const text = input.hasText ? PRICING.textCost : 0
-  const unitPrice = Math.round(input.basePrice + input.materialSurcharge + print + text)
+  const method = input.methodSurcharge ?? 0
+  const unitPrice = Math.round(input.basePrice + input.materialSurcharge + method + print + text)
   return {
     base: input.basePrice,
     material: input.materialSurcharge,
+    method,
     print,
     text,
     unitPrice,
