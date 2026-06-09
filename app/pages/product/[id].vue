@@ -102,23 +102,34 @@ const activeImage = ref(0)
 
 <template>
   <section v-if="product" class="grid md:grid-cols-2 gap-10">
-    <!-- галерея -->
+    <!-- галерея (§6.2): крупное фото с zoom по hover + crossfade при смене -->
     <div class="space-y-3">
-      <div class="aspect-square rounded-lg overflow-hidden bg-ink-gray-200">
-        <img v-if="gallery[activeImage]" :src="gallery[activeImage]!.url" :alt="product.title" class="w-full h-full object-cover">
-        <div v-else class="w-full h-full flex items-center justify-center text-ink-gray-400">
-          <UIcon name="i-lucide-image" class="size-12" />
-        </div>
+      <div class="group relative aspect-square rounded-lg overflow-hidden bg-ink-gray-50">
+        <Transition name="img-fade" mode="out-in">
+          <NuxtImg
+            v-if="gallery[activeImage]"
+            :key="gallery[activeImage]!.id"
+            :src="gallery[activeImage]!.url"
+            :alt="product.title"
+            class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            sizes="(max-width: 768px) 100vw, 560px"
+            loading="eager"
+          />
+          <div v-else class="w-full h-full flex items-center justify-center text-ink-gray-400">
+            <UIcon name="i-lucide-image" class="size-12" />
+          </div>
+        </Transition>
       </div>
       <div v-if="gallery.length > 1" class="flex gap-2">
         <button
           v-for="(img, i) in gallery"
           :key="img.id"
-          class="size-16 rounded-md overflow-hidden border-2"
-          :class="i === activeImage ? 'border-ink-burgundy' : 'border-transparent'"
+          class="size-16 rounded-md overflow-hidden border-2 transition-colors"
+          :class="i === activeImage ? 'border-ink-burgundy' : 'border-ink-gray-200 hover:border-ink-gray-400'"
+          :aria-label="`Фото ${i + 1}`"
           @click="activeImage = i"
         >
-          <img :src="img.url" alt="" class="w-full h-full object-cover">
+          <NuxtImg :src="img.url" alt="" class="w-full h-full object-cover" sizes="64px" loading="lazy" />
         </button>
       </div>
     </div>
@@ -127,7 +138,7 @@ const activeImage = ref(0)
     <div class="space-y-6">
       <div>
         <UiSectionLabel accent>{{ product.category }}</UiSectionLabel>
-        <h1 class="ink-display text-h2 mt-2">{{ product.title }}</h1>
+        <h1 class="ink-display text-h1 mt-2">{{ product.title }}</h1>
         <p class="text-h3 mt-2 text-ink-burgundy font-bold">от {{ priceFrom }} ₸</p>
       </div>
 
@@ -185,23 +196,24 @@ const activeImage = ref(0)
         </div>
       </div>
 
-      <div class="flex gap-2">
-        <UButton
-          v-if="product.alias"
-          :to="`/customize/${product.alias}`"
-          color="primary"
-          size="xl"
-          icon="i-lucide-brush"
-          class="flex-1"
-          block
-        >
-          Создать свой принт
-        </UButton>
+      <div class="flex items-center gap-2">
+        <div v-if="product.alias" class="flex-1">
+          <UiAppButton
+            :to="`/customize/${product.alias}`"
+            variant="primary"
+            size="xl"
+            icon="i-lucide-brush"
+            magnetic
+            block
+          >
+            Перейти в конструктор
+          </UiAppButton>
+        </div>
         <UButton
           size="xl"
           :color="favId ? 'primary' : 'neutral'"
           :variant="favId ? 'subtle' : 'outline'"
-          :icon="favId ? 'i-lucide-heart' : 'i-lucide-heart'"
+          icon="i-lucide-heart"
           :loading="favBusy"
           aria-label="В избранное"
           @click="onToggleFav"
@@ -219,3 +231,16 @@ const activeImage = ref(0)
     </div>
   </section>
 </template>
+
+<style scoped>
+/* Crossfade главного фото галереи (§6.2) */
+.img-fade-enter-active,
+.img-fade-leave-active {
+  transition: opacity var(--dur-base) var(--ease-out);
+}
+.img-fade-enter-from,
+.img-fade-leave-to {
+  opacity: 0;
+}
+</style>
+
