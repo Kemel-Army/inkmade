@@ -8,7 +8,10 @@ export const useOrder = () => {
   const supabase = useSupabaseClient<Database>()
   const cart = useCart()
 
-  async function createFromCart(items: CartItem[], shippingAddr: Json, promoCode?: string): Promise<{ orderId: string; total: number }> {
+  interface GiftInput { recipient?: string; message?: string; hidePrice?: boolean }
+  async function createFromCart(
+    items: CartItem[], shippingAddr: Json, promoCode?: string, gift?: GiftInput,
+  ): Promise<{ orderId: string; total: number }> {
     const payload = {
       items: items.map(i => ({
         productId: i.productId,
@@ -19,6 +22,7 @@ export const useOrder = () => {
       })),
       shippingAddr,
       promoCode: promoCode || undefined,
+      gift: gift && (gift.recipient || gift.message) ? gift : undefined,
     }
     return await $fetch<{ orderId: string; total: number }>('/api/orders/create', {
       method: 'POST',

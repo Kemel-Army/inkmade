@@ -38,7 +38,12 @@ export default defineEventHandler(async (event) => {
   const user = await serverSupabaseUser(event)
   if (!user) throw createError({ statusCode: 401, statusMessage: 'Требуется вход' })
 
-  const body = await readBody<{ items: IncomingItem[]; shippingAddr: Json; promoCode?: string }>(event)
+  const body = await readBody<{
+    items: IncomingItem[]
+    shippingAddr: Json
+    promoCode?: string
+    gift?: { recipient?: string; message?: string; hidePrice?: boolean }
+  }>(event)
   const items = body.items
   if (!Array.isArray(items) || items.length === 0) {
     throw createError({ statusCode: 400, statusMessage: 'Корзина пуста' })
@@ -134,8 +139,16 @@ export default defineEventHandler(async (event) => {
   }
   const total = Math.max(0, subtotal - discount)
 
+  const gift = body.gift
+  const isGift = !!gift && (!!gift.recipient || !!gift.message)
   const { data: order, error: oErr } = await svc.from('orders')
-    .insert({ user_id: uid, status: 'created', total, discount, promo_code: promoCode, shipping_addr: body.shippingAddr })
+    .insert({
+      user_id: uid, status: 'created', total, discount, promo_code: promoCode, shipping_addr: body.shippingAddr,
+      is_gift: isGift,
+      gift_recipient: isGift ? (gift?.recipient ?? null) : null,
+      gift_message: isGift ? (gift?.message ?? null) : null,
+      gift_hide_price: isGift ? !!gift?.hidePrice : false,
+    })
     .select('id').single()
   if (oErr || !order) throw createError({ statusCode: 500, statusMessage: 'Не удалось создать заказ' })
 

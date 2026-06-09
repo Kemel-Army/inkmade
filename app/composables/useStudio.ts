@@ -29,6 +29,10 @@ export interface StudioOrder {
   tracking_no: string | null
   carrier: string | null
   shipping_addr: Record<string, unknown> | null
+  is_gift: boolean
+  gift_recipient: string | null
+  gift_message: string | null
+  gift_hide_price: boolean
   order_items: StudioOrderItem[]
   order_status_log: { id: string; from_status: string | null; to_status: string; note: string | null; created_at: string }[]
 }

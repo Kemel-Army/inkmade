@@ -58,6 +58,9 @@ async function applyPromo() {
   }
 }
 
+// подарочный заказ (§3.1): получатель, открытка, скрыть цену в упаковке
+const gift = reactive({ on: false, recipient: '', message: '', hidePrice: true })
+
 // телефон: ≥10 цифр (KZ-формат +7 7xx ...); email: базовый паттерн
 const phoneDigits = computed(() => form.phone.replace(/\D/g, ''))
 const emailValid = computed(() => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
@@ -74,7 +77,8 @@ async function onPay() {
   paying.value = true
   try {
     useAnalytics().initiateCheckout(cart.total.value)
-    const { orderId } = await createFromCart(cart.items.value, { ...form }, promo.applied || undefined)
+    const giftPayload = gift.on ? { recipient: gift.recipient.trim(), message: gift.message.trim(), hidePrice: gift.hidePrice } : undefined
+    const { orderId } = await createFromCart(cart.items.value, { ...form }, promo.applied || undefined, giftPayload)
     const { payUrl } = await $fetch<{ payUrl: string }>('/api/payment/create', {
       method: 'POST',
       body: { orderId },
@@ -114,6 +118,20 @@ async function onPay() {
         <UFormField label="Адрес доставки" required>
           <UInput v-model="form.address" class="w-full" />
         </UFormField>
+      </div>
+
+      <!-- подарочный заказ (§3.1) -->
+      <div class="border border-ink-gray-200 rounded-lg p-4 space-y-3">
+        <UCheckbox v-model="gift.on" label="Это подарок 🎁" />
+        <template v-if="gift.on">
+          <UFormField label="Имя получателя" help="Кому вручить — для открытки и упаковки">
+            <UInput v-model="gift.recipient" placeholder="Имя получателя" class="w-full" />
+          </UFormField>
+          <UFormField label="Текст открытки">
+            <UTextarea v-model="gift.message" :rows="2" placeholder="С днём рождения!" class="w-full" maxlength="200" />
+          </UFormField>
+          <UCheckbox v-model="gift.hidePrice" label="Не вкладывать чек с ценой в посылку" />
+        </template>
       </div>
     </div>
 

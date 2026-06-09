@@ -511,7 +511,11 @@ export type Database = {
           currency: string
           discount: number
           fiscal_receipt: Json | null
+          gift_hide_price: boolean
+          gift_message: string | null
+          gift_recipient: string | null
           id: string
+          is_gift: boolean
           paid_at: string | null
           payment_id: string | null
           promo_code: string | null
@@ -528,7 +532,11 @@ export type Database = {
           currency?: string
           discount?: number
           fiscal_receipt?: Json | null
+          gift_hide_price?: boolean
+          gift_message?: string | null
+          gift_recipient?: string | null
           id?: string
+          is_gift?: boolean
           paid_at?: string | null
           payment_id?: string | null
           promo_code?: string | null
@@ -545,7 +553,11 @@ export type Database = {
           currency?: string
           discount?: number
           fiscal_receipt?: Json | null
+          gift_hide_price?: boolean
+          gift_message?: string | null
+          gift_recipient?: string | null
           id?: string
+          is_gift?: boolean
           paid_at?: string | null
           payment_id?: string | null
           promo_code?: string | null

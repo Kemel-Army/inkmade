@@ -117,6 +117,14 @@ function printReceipt() {
       </div>
     </div>
 
+    <!-- подарок (§3.1) -->
+    <div v-if="order.is_gift" class="border border-ink-burgundy/40 bg-ink-burgundy/5 rounded-lg p-4 text-caption space-y-1">
+      <p class="ink-label text-ink-burgundy flex items-center gap-1.5"><UIcon name="i-lucide-gift" class="size-3.5" /> Подарочный заказ</p>
+      <p v-if="order.gift_recipient">Получатель: <strong>{{ order.gift_recipient }}</strong></p>
+      <p v-if="order.gift_message">Открытка: «{{ order.gift_message }}»</p>
+      <p v-if="order.gift_hide_price" class="text-ink-gray-500">Чек с ценой не вкладывается в посылку.</p>
+    </div>
+
     <!-- чек об оплате (§3.1) -->
     <div v-if="order.paid_at" class="border border-ink-gray-200 rounded-lg p-4 space-y-1">
       <div class="flex items-center justify-between">

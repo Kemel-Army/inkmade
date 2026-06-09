@@ -82,6 +82,14 @@ function specPlacements(item: { designs?: { spec?: unknown } | null }) {
       <UButton to="/studio" color="neutral" variant="ghost" icon="i-lucide-arrow-left">К очереди</UButton>
     </div>
 
+    <!-- подарочная упаковка (§3.1): инструкция для цеха -->
+    <div v-if="order.is_gift" class="mb-6 border-2 border-ink-burgundy/40 bg-ink-burgundy/5 rounded-lg p-4">
+      <p class="ink-label text-ink-burgundy flex items-center gap-1.5"><UIcon name="i-lucide-gift" class="size-4" /> Подарочная упаковка</p>
+      <p v-if="order.gift_recipient" class="text-caption mt-2">Получатель: <strong>{{ order.gift_recipient }}</strong></p>
+      <p v-if="order.gift_message" class="text-caption mt-1">Открытка: «{{ order.gift_message }}»</p>
+      <p v-if="order.gift_hide_price" class="text-caption mt-1 font-semibold text-ink-burgundy">⚠ Не вкладывать чек с ценой</p>
+    </div>
+
     <div class="grid lg:grid-cols-[1fr_300px] gap-8">
       <!-- позиции -->
       <div class="space-y-4">
