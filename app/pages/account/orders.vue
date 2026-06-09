@@ -20,16 +20,16 @@ const shortId = (s: string) => s.slice(0, 8)
 
 // повтор заказа в один клик из списка (CRM §3.2)
 const { reorder } = useOrder()
-const toast = useToast()
+const notify = useNotify()
 const reordering = ref<string | null>(null)
 async function onReorder(orderId: string) {
   reordering.value = orderId
   try {
     const n = await reorder(orderId)
-    toast.add({ title: `Добавлено в корзину: ${n}`, color: 'success' })
+    notify.success(`Добавлено в корзину: ${n}`)
     await navigateTo('/cart')
   } catch (e) {
-    toast.add({ title: 'Не удалось повторить', description: (e as Error).message, color: 'error' })
+    notify.error('Не удалось повторить', (e as Error).message)
   } finally {
     reordering.value = null
   }
@@ -41,10 +41,18 @@ async function onReorder(orderId: string) {
     <UiSectionLabel accent>Заказы</UiSectionLabel>
     <h1 class="ink-display text-3xl mt-2 mb-6">Мои заказы</h1>
 
-    <div v-if="pending" class="py-10 text-center text-ink-gray-600">Загрузка…</div>
-    <div v-else-if="!orders?.length" class="py-10 text-center text-ink-gray-600">
-      Заказов пока нет. <NuxtLink to="/catalog" class="text-ink-burgundy font-semibold">В каталог</NuxtLink>
+    <div v-if="pending" class="space-y-3">
+      <UiSkeleton v-for="n in 4" :key="n" rounded="rounded-lg" class="h-20" />
     </div>
+
+    <UiEmptyState
+      v-else-if="!orders?.length"
+      icon="i-lucide-package"
+      title="Заказов пока нет"
+      text="Собери первую вещь — она появится здесь с трек-номером."
+    >
+      <UiAppButton to="/catalog" variant="primary" size="md">В каталог</UiAppButton>
+    </UiEmptyState>
 
     <div v-else class="space-y-3">
       <NuxtLink

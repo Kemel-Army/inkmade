@@ -13,7 +13,7 @@ const { data: designs, pending } = await useAsyncData('account-designs', async (
   return data
 })
 
-const toast = useToast()
+const notify = useNotify()
 const sharingId = ref<string | null>(null)
 
 async function share(id: string) {
@@ -24,10 +24,10 @@ async function share(id: string) {
     const url = `${window.location.origin}/design/${token}`
     try {
       if (navigator.share) await navigator.share({ title: 'Мой дизайн на INKMADE', url })
-      else { await navigator.clipboard.writeText(url); toast.add({ title: 'Ссылка скопирована', color: 'success' }) }
+      else { await navigator.clipboard.writeText(url); notify.linkCopied() }
     } catch { /* пользователь отменил системный шэр — не ошибка */ }
   } catch (e) {
-    toast.add({ title: 'Не удалось создать ссылку', description: (e as Error).message, color: 'error' })
+    notify.error('Не удалось создать ссылку', (e as Error).message)
   } finally {
     sharingId.value = null
   }
@@ -39,15 +39,23 @@ async function share(id: string) {
     <UiSectionLabel accent>Дизайны</UiSectionLabel>
     <h1 class="ink-display text-3xl mt-2 mb-6">Мои дизайны</h1>
 
-    <div v-if="pending" class="py-10 text-center text-ink-gray-600">Загрузка…</div>
-    <div v-else-if="!designs?.length" class="py-10 text-center text-ink-gray-600">
-      Дизайнов пока нет. Соберите принт в <NuxtLink to="/catalog" class="text-ink-burgundy font-semibold">конструкторе</NuxtLink>.
+    <div v-if="pending" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+      <UiSkeleton v-for="n in 8" :key="n" rounded="rounded-lg" class="aspect-square" />
     </div>
+
+    <UiEmptyState
+      v-else-if="!designs?.length"
+      icon="i-lucide-shapes"
+      title="Дизайнов пока нет"
+      text="Собери принт в конструкторе — он сохранится здесь, его можно доработать и заказать."
+    >
+      <UiAppButton to="/catalog" variant="primary" size="md">В конструктор</UiAppButton>
+    </UiEmptyState>
 
     <div v-else class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
       <div v-for="d in designs" :key="d.id" class="border border-ink-gray-200 rounded-lg overflow-hidden">
-        <div class="aspect-square bg-ink-gray-200 flex items-center justify-center">
-          <img v-if="d.preview_url" :src="d.preview_url" alt="" class="w-full h-full object-cover">
+        <div class="aspect-square bg-ink-gray-50 flex items-center justify-center">
+          <NuxtImg v-if="d.preview_url" :src="d.preview_url" alt="" class="w-full h-full object-cover" sizes="240px" loading="lazy" />
           <UIcon v-else name="i-lucide-shapes" class="size-8 text-ink-gray-400" />
         </div>
         <div class="p-3 space-y-2">
