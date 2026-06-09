@@ -18,5 +18,7 @@ const isLanding = computed(() => route.path === '/')
     </main>
 
     <LayoutAppFooter />
+
+    <UiCustomCursor />
   </div>
 </template>
