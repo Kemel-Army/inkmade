@@ -5,14 +5,28 @@ const { auditLog } = useFinance()
 const { data: log, pending } = await useAsyncData('admin-audit', () => auditLog(300))
 
 const actionLabel: Record<string, string> = {
-  role_change: 'Смена роли', product_update: 'Изменение товара',
+  role_change: 'Смена роли',
+  product_update: 'Изменение товара',
 }
-function describe(e: { action: string; before: unknown; after: unknown }) {
+const entityLabel: Record<string, string> = {
+  profile: 'Пользователь', product: 'Товар', print_library: 'Принт',
+  payouts: 'Выплата', promo_codes: 'Промокод', designer_profiles: 'Дизайнер',
+}
+function eventTitle(e: { action: string; entity: string }) {
+  return actionLabel[e.action] ?? entityLabel[e.entity] ?? `${e.entity}: ${e.action}`
+}
+function describe(e: { action: string; entity: string; before: unknown; after: unknown }) {
   const b = (e.before ?? {}) as Record<string, unknown>
   const a = (e.after ?? {}) as Record<string, unknown>
   if (e.action === 'role_change') return `${b.role} → ${a.role}`
   if (e.action === 'product_update') return `цена ${b.base_price}→${a.base_price}, активен ${b.is_active}→${a.is_active}`
-  return JSON.stringify(a)
+  switch (e.entity) {
+    case 'print_library': return `«${a.title}»: модерация ${b.moderation_status ?? '—'} → ${a.moderation_status}`
+    case 'payouts': return `выплата ${b.status ?? '—'} → ${a.status} (${a.amount} ₸)`
+    case 'promo_codes': return `${a.code}: ${a.active ? 'активен' : 'выключен'}`
+    case 'designer_profiles': return `ставка ${b.royalty_pct ?? '—'}% → ${a.royalty_pct}%`
+    default: return ''
+  }
 }
 </script>
 
@@ -27,7 +41,7 @@ function describe(e: { action: string; before: unknown; after: unknown }) {
     <div v-else class="border border-ink-gray-200 rounded-lg divide-y divide-ink-gray-200 text-caption">
       <div v-for="e in log" :key="e.id" class="flex items-center justify-between p-3">
         <span class="text-ink-gray-500 w-32">{{ new Date(e.created_at).toLocaleString('ru') }}</span>
-        <span class="w-40 font-semibold">{{ actionLabel[e.action] ?? e.action }}</span>
+        <span class="w-40 font-semibold">{{ eventTitle(e) }}</span>
         <span class="flex-1 text-ink-gray-600">{{ describe(e) }}</span>
       </div>
     </div>
