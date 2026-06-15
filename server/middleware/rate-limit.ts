@@ -9,12 +9,15 @@ interface Hit {
 }
 
 const WINDOW_MS = 60_000
+// Порядок важен: более специфичные префиксы — ВЫШЕ общих (pickLimit берёт первый матч).
 const LIMITS: { prefix: string; max: number }[] = [
   { prefix: '/api/payment/webhook', max: 60 }, // приходит от провайдера, лимит мягче
   { prefix: '/api/payment/', max: 20 },
   { prefix: '/api/orders/create', max: 20 },
   { prefix: '/api/orders/', max: 40 }, // смена статуса и пр.
-  { prefix: '/api/designs/', max: 40 }, // шаринг/импорт/модерация — от перебора токенов
+  { prefix: '/api/designs/shared/', max: 30 }, // публичный доступ по токену — отдельный жёсткий лимит от перебора
+  { prefix: '/api/designs/', max: 40 }, // импорт/модерация/share
+  { prefix: '/api/promo/', max: 30 }, // валидация промокода — от перебора кодов
 ]
 
 const buckets = new Map<string, Hit>()
