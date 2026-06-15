@@ -89,22 +89,22 @@ function printReceipt() {
     <UAlert v-else color="warning" variant="subtle" :title="CUSTOMER_STATUS[order.status as OrderStatus]" />
 
     <!-- трек -->
-    <div v-if="order.tracking_no" class="border border-ink-gray-200 rounded-lg p-4">
-      <p class="ink-label text-ink-gray-600">Отслеживание</p>
+    <UiPanel v-if="order.tracking_no" title="Отслеживание" icon="i-lucide-truck">
       <p class="font-semibold">{{ order.tracking_no }} <span class="text-ink-gray-600 font-normal">· {{ order.carrier }}</span></p>
-    </div>
+    </UiPanel>
 
     <!-- позиции -->
-    <div class="space-y-2">
-      <UiSectionLabel>Состав</UiSectionLabel>
-      <div v-for="(it, i) in order.order_items" :key="i" class="flex justify-between border-b border-ink-gray-200 py-2">
-        <span>{{ it.variants?.products?.title }} · {{ it.variants?.color_name }}/{{ it.variants?.size }} ×{{ it.quantity }}</span>
-        <span class="font-semibold">{{ it.unit_price * it.quantity }} ₸</span>
+    <UiPanel title="Состав" icon="i-lucide-package">
+      <div class="space-y-1">
+        <div v-for="(it, i) in order.order_items" :key="i" class="flex justify-between border-b border-ink-gray-200 py-2 last:border-0">
+          <span>{{ it.variants?.products?.title }} · {{ it.variants?.color_name }}/{{ it.variants?.size }} ×{{ it.quantity }}</span>
+          <span class="font-semibold">{{ it.unit_price * it.quantity }} ₸</span>
+        </div>
+        <div class="flex justify-between pt-2 font-bold">
+          <span>Итого</span><span class="text-ink-burgundy">{{ order.total }} {{ order.currency }}</span>
+        </div>
       </div>
-      <div class="flex justify-between pt-2 font-bold">
-        <span>Итого</span><span class="text-ink-burgundy">{{ order.total }} {{ order.currency }}</span>
-      </div>
-    </div>
+    </UiPanel>
 
     <!-- подарок (§3.1) -->
     <div v-if="order.is_gift" class="border border-ink-burgundy/40 bg-ink-burgundy/5 rounded-lg p-4 text-caption space-y-1">
@@ -115,18 +115,19 @@ function printReceipt() {
     </div>
 
     <!-- чек об оплате (§3.1) -->
-    <div v-if="order.paid_at" class="border border-ink-gray-200 rounded-lg p-4 space-y-1">
-      <div class="flex items-center justify-between">
-        <p class="ink-label text-ink-gray-600">Чек об оплате</p>
+    <UiPanel v-if="order.paid_at" title="Чек об оплате" icon="i-lucide-receipt">
+      <template #actions>
         <UButton size="xs" color="neutral" variant="subtle" icon="i-lucide-printer" @click="printReceipt">Печать</UButton>
+      </template>
+      <div class="space-y-1">
+        <p class="font-semibold">{{ fmt(order.total) }} {{ order.currency }}</p>
+        <p class="text-caption text-ink-gray-600">Оплачено: {{ new Date(order.paid_at).toLocaleString('ru') }}</p>
+        <p v-if="receipt?.provider_txn" class="text-caption text-ink-gray-600">Транзакция: {{ receipt.provider_txn }}</p>
+        <p v-if="receipt?.status === 'pending_fiscalization'" class="text-caption text-ink-gray-400">
+          Фискальный чек ОФД будет доступен после фискализации.
+        </p>
       </div>
-      <p class="font-semibold">{{ fmt(order.total) }} {{ order.currency }}</p>
-      <p class="text-caption text-ink-gray-600">Оплачено: {{ new Date(order.paid_at).toLocaleString('ru') }}</p>
-      <p v-if="receipt?.provider_txn" class="text-caption text-ink-gray-600">Транзакция: {{ receipt.provider_txn }}</p>
-      <p v-if="receipt?.status === 'pending_fiscalization'" class="text-caption text-ink-gray-400">
-        Фискальный чек ОФД будет доступен после фискализации.
-      </p>
-    </div>
+    </UiPanel>
 
     <div class="flex flex-wrap gap-3">
       <UButton to="/account/orders" color="neutral" variant="ghost" icon="i-lucide-arrow-left">Все заказы</UButton>

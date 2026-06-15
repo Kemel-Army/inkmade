@@ -64,7 +64,8 @@ async function onSubmit() {
       description="Подтвердите email по ссылке из письма, затем войдите."
     />
 
-    <form v-else class="space-y-4" @submit.prevent="onSubmit">
+    <UiPanel v-else>
+      <form class="space-y-4" @submit.prevent="onSubmit">
       <UFormField label="Имя">
         <UInput v-model="fullName" autocomplete="name" class="w-full" />
       </UFormField>
@@ -91,7 +92,8 @@ async function onSubmit() {
         </template>
       </UCheckbox>
       <UButton type="submit" color="primary" size="lg" block :loading="loading" :disabled="!agree || !phoneValid">Зарегистрироваться</UButton>
-    </form>
+      </form>
+    </UiPanel>
 
     <p class="text-caption text-ink-gray-600 mt-6">
       Уже есть аккаунт?

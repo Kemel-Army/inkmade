@@ -30,15 +30,17 @@ async function onSubmit() {
     <UiSectionLabel accent>Вход</UiSectionLabel>
     <h1 class="ink-display text-3xl mt-2 mb-6">С возвращением</h1>
 
-    <form class="space-y-4" @submit.prevent="onSubmit">
-      <UFormField label="Email">
-        <UInput v-model="email" type="email" autocomplete="email" required class="w-full" />
-      </UFormField>
-      <UFormField label="Пароль">
-        <UInput v-model="password" type="password" autocomplete="current-password" required class="w-full" />
-      </UFormField>
-      <UButton type="submit" color="primary" size="lg" block :loading="loading">Войти</UButton>
-    </form>
+    <UiPanel>
+      <form class="space-y-4" @submit.prevent="onSubmit">
+        <UFormField label="Email">
+          <UInput v-model="email" type="email" autocomplete="email" required class="w-full" />
+        </UFormField>
+        <UFormField label="Пароль">
+          <UInput v-model="password" type="password" autocomplete="current-password" required class="w-full" />
+        </UFormField>
+        <UButton type="submit" color="primary" size="lg" block :loading="loading">Войти</UButton>
+      </form>
+    </UiPanel>
 
     <p class="text-caption text-ink-gray-600 mt-6">
       Нет аккаунта?

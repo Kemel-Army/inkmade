@@ -121,22 +121,25 @@ async function onPay() {
       </div>
 
       <!-- подарочный заказ (§3.1) -->
-      <div class="border border-ink-gray-200 rounded-lg p-4 space-y-3">
-        <UCheckbox v-model="gift.on" label="Это подарок 🎁" />
-        <template v-if="gift.on">
-          <UFormField label="Имя получателя" help="Кому вручить — для открытки и упаковки">
-            <UInput v-model="gift.recipient" placeholder="Имя получателя" class="w-full" />
-          </UFormField>
-          <UFormField label="Текст открытки">
-            <UTextarea v-model="gift.message" :rows="2" placeholder="С днём рождения!" class="w-full" maxlength="200" />
-          </UFormField>
-          <UCheckbox v-model="gift.hidePrice" label="Не вкладывать чек с ценой в посылку" />
-        </template>
-      </div>
+      <UiPanel>
+        <div class="space-y-3">
+          <UCheckbox v-model="gift.on" label="Это подарок 🎁" />
+          <template v-if="gift.on">
+            <UFormField label="Имя получателя" help="Кому вручить — для открытки и упаковки">
+              <UInput v-model="gift.recipient" placeholder="Имя получателя" class="w-full" />
+            </UFormField>
+            <UFormField label="Текст открытки">
+              <UTextarea v-model="gift.message" :rows="2" placeholder="С днём рождения!" class="w-full" maxlength="200" />
+            </UFormField>
+            <UCheckbox v-model="gift.hidePrice" label="Не вкладывать чек с ценой в посылку" />
+          </template>
+        </div>
+      </UiPanel>
     </div>
 
-    <aside class="border border-ink-gray-200 rounded-lg p-5 h-fit space-y-3">
-      <UiSectionLabel accent>Заказ</UiSectionLabel>
+    <aside class="h-fit md:sticky md:top-8">
+      <UiPanel title="Ваш заказ" icon="i-lucide-shopping-bag">
+        <div class="space-y-3">
       <div v-for="i in cart.items.value" :key="i.id" class="flex justify-between text-caption">
         <span>{{ i.title }} ({{ i.size }}) ×{{ i.quantity }}</span>
         <span>{{ formatPrice(i.unitPrice * i.quantity) }}</span>
@@ -171,6 +174,8 @@ async function onPay() {
         <UIcon name="i-lucide-shield-check" class="shrink-0" />
         Безопасная оплата онлайн. Чек придёт на email.
       </p>
+        </div>
+      </UiPanel>
     </aside>
   </section>
 </template>
