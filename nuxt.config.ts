@@ -5,6 +5,14 @@ export default defineNuxtConfig({
   future: { compatibilityVersion: 4 },
   devtools: { enabled: true },
 
+  // Дизайн светлый (кремовая палитра, §2.2) — фиксируем светлую тему Nuxt UI,
+  // иначе при тёмной системной теме компоненты (поля, меню) рендерятся тёмными
+  // поверх нашего светлого фона. Тёмный контекст задаём точечно классами (ink-black).
+  colorMode: {
+    preference: 'light',
+    fallback: 'light',
+  },
+
   modules: [
     '@nuxt/ui',
     '@nuxt/fonts',

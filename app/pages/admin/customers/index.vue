@@ -1,0 +1,108 @@
+<script setup lang="ts">
+import { formatPrice, formatDate } from '~/utils/format'
+import { formatKzPhone } from '~~/shared/config/phone'
+
+// CRM: список клиентов с агрегатами (заказы, LTV, последний заказ). Только admin.
+definePageMeta({ layout: 'admin', middleware: 'admin-role' })
+useHead({ title: 'Клиенты — INKMADE' })
+
+const { list } = useCustomers()
+const { data: customers, pending } = await useAsyncData('admin-customers', () => list())
+
+const search = ref('')
+const sort = ref<'recent' | 'spent' | 'orders'>('recent')
+const sortItems = [
+  { label: 'По последнему заказу', value: 'recent' },
+  { label: 'По сумме покупок', value: 'spent' },
+  { label: 'По числу заказов', value: 'orders' },
+]
+
+const rows = computed(() => {
+  let list = customers.value ?? []
+  const q = search.value.trim().toLowerCase()
+  if (q) {
+    list = list.filter(c =>
+      `${c.full_name ?? ''} ${c.email ?? ''} ${c.phone ?? ''}`.toLowerCase().includes(q),
+    )
+  }
+  const arr = [...list]
+  if (sort.value === 'spent') arr.sort((a, b) => Number(b.total_spent) - Number(a.total_spent))
+  else if (sort.value === 'orders') arr.sort((a, b) => Number(b.orders_count) - Number(a.orders_count))
+  // 'recent' уже отсортирован на сервере
+  return arr
+})
+
+// сводка сверху
+const totals = computed(() => {
+  const list = customers.value ?? []
+  return {
+    count: list.length,
+    paying: list.filter(c => Number(c.orders_count) > 0).length,
+    revenue: list.reduce((s, c) => s + Number(c.total_spent || 0), 0),
+  }
+})
+</script>
+
+<template>
+  <div>
+    <UiPageHeader label="CRM" title="Клиенты" description="База покупателей с историей заказов и суммой покупок." />
+
+    <div v-if="pending" class="space-y-3">
+      <div class="grid sm:grid-cols-3 gap-4">
+        <UiSkeleton v-for="n in 3" :key="n" rounded="rounded-lg" class="h-24" />
+      </div>
+      <UiSkeleton v-for="n in 6" :key="`r${n}`" rounded="rounded-lg" class="h-12" />
+    </div>
+
+    <template v-else>
+      <!-- сводка -->
+      <div class="grid sm:grid-cols-3 gap-4 mb-6">
+        <UiStatCard label="Всего клиентов" :value="totals.count" icon="i-lucide-users" />
+        <UiStatCard label="С покупками" :value="totals.paying" icon="i-lucide-shopping-bag" />
+        <UiStatCard label="Выручка по клиентам" :value="formatPrice(totals.revenue)" icon="i-lucide-wallet" accent />
+      </div>
+
+      <div class="flex flex-wrap items-center gap-3 mb-4">
+        <UInput v-model="search" icon="i-lucide-search" placeholder="Поиск по имени, email, телефону" class="w-72" />
+        <USelect v-model="sort" :items="sortItems" value-key="value" class="w-56" />
+      </div>
+
+      <UiEmptyState v-if="!rows.length" icon="i-lucide-users" title="Клиентов нет" text="Покупатели появятся здесь после регистрации." />
+
+      <UiPanel v-else :padded="false">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="ink-label text-ink-gray-600 border-b border-ink-gray-200">
+                <th class="px-6 py-3">Клиент</th>
+                <th class="px-6 py-3">Телефон</th>
+                <th class="px-6 py-3 text-right">Заказов</th>
+                <th class="px-6 py-3 text-right">Потрачено</th>
+                <th class="px-6 py-3">Последний заказ</th>
+                <th class="px-6 py-3">Связь</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="c in rows" :key="c.id" class="border-b border-ink-gray-200 hover:bg-ink-gray-200/30">
+                <td class="px-6 py-3">
+                  <NuxtLink :to="`/admin/customers/${c.id}`" class="font-semibold hover:text-ink-burgundy">
+                    {{ c.full_name || 'Без имени' }}
+                  </NuxtLink>
+                  <p class="text-caption text-ink-gray-500">{{ c.email }}</p>
+                </td>
+                <td class="px-6 py-3 font-mono text-sm">{{ c.phone ? formatKzPhone(c.phone) : '—' }}</td>
+                <td class="px-6 py-3 text-right">{{ c.orders_count }}</td>
+                <td class="px-6 py-3 text-right font-semibold">{{ formatPrice(Number(c.total_spent)) }}</td>
+                <td class="px-6 py-3 text-caption text-ink-gray-600">{{ c.last_order_at ? formatDate(c.last_order_at) : '—' }}</td>
+                <td class="px-6 py-3">
+                  <UBadge v-if="c.marketing_consent" color="success" variant="subtle" size="xs">согласие</UBadge>
+                  <span v-else class="text-caption text-ink-gray-400">—</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </UiPanel>
+    </template>
+  </div>
+</template>

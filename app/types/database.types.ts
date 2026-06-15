@@ -1230,6 +1230,21 @@ export type Database = {
         }[]
       }
       admin_margin_breakdown: { Args: never; Returns: Json }
+      admin_customer: { Args: { p_id: string }; Returns: Json }
+      admin_list_customers: {
+        Args: never
+        Returns: {
+          id: string
+          email: string
+          full_name: string
+          phone: string
+          marketing_consent: boolean
+          created_at: string
+          orders_count: number
+          total_spent: number
+          last_order_at: string
+        }[]
+      }
       admin_stats: { Args: never; Returns: Json }
       apply_paid: {
         Args: { p_order_id: string; p_provider_txn: string; p_raw: Json }
