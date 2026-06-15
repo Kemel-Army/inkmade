@@ -21,14 +21,17 @@ const { data: stats, pending } = await useAsyncData('admin-stats', async () => {
   return data as unknown as Stats
 })
 
-// «Требует внимания» + чистая прибыль (CRM §6.1)
+const from30 = new Date(Date.now() - 29 * 86400000).toISOString()
+
+// «Требует внимания» + чистая прибыль + новые клиенты за 30 дней (CRM §6.1)
 const { data: attention } = await useAsyncData('admin-attention', async () => {
-  const [fin, mod, payouts, problem, lowStock] = await Promise.all([
+  const [fin, mod, payouts, problem, lowStock, newCust] = await Promise.all([
     supabase.rpc('admin_finance_stats', {}),
     supabase.from('print_library').select('id', { count: 'exact', head: true }).eq('moderation_status', 'pending'),
     supabase.from('payouts').select('id', { count: 'exact', head: true }).eq('status', 'requested'),
     supabase.from('orders').select('id', { count: 'exact', head: true }).in('status', ['on_hold', 'reprint']),
     supabase.from('variants').select('id', { count: 'exact', head: true }).lte('stock', 5),
+    supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'customer').gte('created_at', from30),
   ])
   return {
     profit: (fin.data as { profit?: number } | null)?.profit ?? 0,
@@ -36,7 +39,23 @@ const { data: attention } = await useAsyncData('admin-attention', async () => {
     payouts: payouts.count ?? 0,
     problem: problem.count ?? 0,
     lowStock: lowStock.count ?? 0,
+    newCustomers: newCust.count ?? 0,
   }
+})
+
+// тренд выручки за 30 дней (мини-график)
+const { series } = useFinance()
+const { data: trend } = await useAsyncData('admin-trend', () =>
+  series(from30, new Date().toISOString()),
+)
+const maxRev = computed(() => Math.max(1, ...((trend.value ?? []).map(d => d.revenue))))
+const avgCheck = computed(() => {
+  const paid = stats.value?.paid_orders ?? 0
+  return paid > 0 ? Math.round((stats.value?.revenue ?? 0) / paid) : 0
+})
+const conversion = computed(() => {
+  const total = stats.value?.orders_total ?? 0
+  return total > 0 ? Math.round(((stats.value?.paid_orders ?? 0) / total) * 100) : 0
 })
 
 const STATUS_LABELS: Record<string, string> = {
@@ -86,8 +105,25 @@ const fmt = (n: number) => new Intl.NumberFormat('ru-RU').format(n)
           <UiStatCard label="Выручка (оплачено)" :value="`${fmt(stats?.revenue ?? 0)} ₸`" icon="i-lucide-trending-up" />
           <UiStatCard label="Оплаченных заказов" :value="stats?.paid_orders ?? 0" icon="i-lucide-shopping-bag" />
           <UiStatCard label="Всего заказов" :value="stats?.orders_total ?? 0" icon="i-lucide-clipboard-list" />
+          <UiStatCard label="Средний чек" :value="`${fmt(avgCheck)} ₸`" icon="i-lucide-receipt" />
+          <UiStatCard label="Конверсия в оплату" :value="`${conversion}%`" icon="i-lucide-percent" />
+          <UiStatCard label="Новые клиенты (30д)" :value="attention?.newCustomers ?? 0" icon="i-lucide-user-plus" />
           <UiStatCard label="Доля брака" :value="`${defectRate}%`" icon="i-lucide-triangle-alert" />
         </div>
+
+        <!-- тренд выручки за 30 дней -->
+        <UiPanel title="Выручка за 30 дней" icon="i-lucide-bar-chart-3">
+          <div v-if="trend?.length" class="flex items-end gap-0.5 h-32">
+            <div
+              v-for="d in trend"
+              :key="d.day"
+              class="flex-1 bg-ink-burgundy/70 hover:bg-ink-burgundy rounded-t transition-colors min-h-0.5"
+              :style="{ height: Math.round((d.revenue / maxRev) * 100) + '%' }"
+              :title="`${new Date(d.day).toLocaleDateString('ru')}: ${fmt(d.revenue)} ₸`"
+            />
+          </div>
+          <p v-else class="text-caption text-ink-gray-400">Нет данных за период.</p>
+        </UiPanel>
 
         <div class="grid md:grid-cols-2 gap-6">
           <!-- заказы по статусам -->
