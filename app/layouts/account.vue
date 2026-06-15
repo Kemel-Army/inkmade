@@ -7,8 +7,12 @@ const nav = [
   { label: 'Адреса', to: '/account/addresses', icon: 'i-lucide-map-pin' },
   { label: 'Профиль', to: '/account', icon: 'i-lucide-user' },
 ]
-const { signOut } = useAuth()
+const { signOut, profile, homePath } = useAuth()
 async function onSignOut() { await signOut(); await navigateTo('/') }
+// админ/оператор/дизайнер не залипают в клиентском кабинете — уводим в их кабинет
+watchEffect(() => {
+  if (profile.value && profile.value.role !== 'customer') navigateTo(homePath.value)
+})
 </script>
 
 <template>
