@@ -1,14 +1,9 @@
 import { serverSupabaseUser, serverSupabaseServiceRole } from '#supabase/server'
 import type { Database, Json } from '~/types/database.types'
+import { designImportSchema, parseOrThrow } from '~~/server/utils/schemas'
 
 // Импорт гостевых дизайнов в аккаунт (CRM §3.2). Вызывается при входе (плагин)
 // или из кастомайзера для вошедшего пользователя. Сохраняет в designs (is_saved=true).
-interface IncomingDesign {
-  productId?: string
-  spec?: Json
-  previewUrl?: string | null
-  parentId?: string | null
-}
 
 const MAX = 20
 
@@ -16,7 +11,7 @@ export default defineEventHandler(async (event) => {
   const user = await serverSupabaseUser(event)
   if (!user) throw createError({ statusCode: 401, statusMessage: 'Требуется вход' })
 
-  const body = await readBody<{ designs?: IncomingDesign[] }>(event)
+  const body = parseOrThrow(designImportSchema, await readBody(event))
   const incoming = (body.designs ?? []).slice(0, MAX)
   if (!incoming.length) return { imported: 0 }
 

@@ -6,64 +6,31 @@ import { calcPrice } from '~~/shared/config/pricing'
 import { dpiAtMaxSize, DPI_MIN } from '~~/shared/config/zones'
 import { LEGAL } from '~~/shared/config/legal'
 import { computePromoDiscount } from '~~/server/utils/promo'
-import { validateShippingAddr, assertPlacementGeometry } from '~~/server/utils/validation'
+import { orderCreateSchema, parseOrThrow } from '~~/server/utils/schemas'
 
 // Создание заказа из корзины НА СЕРВЕРЕ (§9, аудит C7/H2).
 // Цена и DPI проверяются по БД — клиентскому unit_price из localStorage доверять нельзя
 // (подмена → заказ на 1 тенге). paid здесь НЕ ставится (инвариант §10).
 
-interface SpecPlacement {
-  zone?: string
-  width_mm?: number
-  height_mm?: number
-  natural_w?: number
-  natural_h?: number
-  source?: string
-  text?: string
-}
-interface DesignSpec {
-  placements?: SpecPlacement[]
-  print_mode?: PrintMode
-  composition_url?: string
-  print_id?: string | null
-}
-interface IncomingItem {
-  productId: string
-  variantId: string
-  printMethod: string | null
-  spec: DesignSpec
-  quantity: number
-}
-
 export default defineEventHandler(async (event) => {
   const user = await serverSupabaseUser(event)
   if (!user) throw createError({ statusCode: 401, statusMessage: 'Требуется вход' })
 
-  const body = await readBody<{
-    items: IncomingItem[]
-    shippingAddr: Json
-    promoCode?: string
-    gift?: { recipient?: string; message?: string; hidePrice?: boolean }
-  }>(event)
+  // Zod-валидация тела: uuid позиций, геометрия плейсментов, email/телефон адреса,
+  // формат промокода — всё на границе. Бизнес-инварианты (цена/DPI) — ниже по БД.
+  const body = parseOrThrow(orderCreateSchema, await readBody(event))
   const items = body.items
-  if (!Array.isArray(items) || items.length === 0) {
-    throw createError({ statusCode: 400, statusMessage: 'Корзина пуста' })
-  }
-  // структурная валидация адреса (email/телефон) — иначе уведомления и обработка падают на мусоре
-  const shippingAddr = validateShippingAddr(body.shippingAddr)
+  const shippingAddr = body.shippingAddr
+  type Item = (typeof items)[number]
 
   const svc = serverSupabaseServiceRole<Database>(event)
   const uid = user.id
 
   // ── пересчёт каждой позиции по БД ──────────────────────────────
-  interface Priced { item: IncomingItem; unitPrice: number; unitCost: number }
+  interface Priced { item: Item; unitPrice: number; unitCost: number }
   const priced: Priced[] = []
 
   for (const it of items) {
-    if (!it.productId || !it.variantId || !Number.isInteger(it.quantity) || it.quantity < 1 || it.quantity > 1000) {
-      throw createError({ statusCode: 400, statusMessage: 'Некорректная позиция корзины' })
-    }
-
     const { data: product } = await svc.from('products')
       .select('id, base_price, max_print_mm, is_active').eq('id', it.productId).single()
     if (!product || !product.is_active) {
@@ -84,8 +51,7 @@ export default defineEventHandler(async (event) => {
     if (placements.length === 0) {
       throw createError({ statusCode: 400, statusMessage: 'Дизайн без принта' })
     }
-    // отсекаем NaN/Infinity/отрицательные размеры — иначе искажается цена и DPI
-    for (const p of placements) assertPlacementGeometry(p)
+    // геометрия плейсментов (конечные неотрицательные мм) уже проверена Zod-схемой
 
     // H2: DPI-валидация от МАКСИМАЛЬНОГО размера изделия (§24 инв.1), серверная
     const maxPrint = product.max_print_mm as { width?: number; height?: number } | null
