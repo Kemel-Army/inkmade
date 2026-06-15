@@ -40,17 +40,21 @@ async function openHistory(variantId: string, label: string) {
 
 <template>
   <div>
-    <h1 class="ink-display text-2xl mb-4">Склад заготовок</h1>
-    <div v-if="pending" class="py-6 text-ink-gray-600">Загрузка…</div>
-    <table v-else class="w-full text-caption">
+    <UiPageHeader label="Склад" title="Склад заготовок" description="Остатки по вариантам, история движений и списание брака." />
+    <div v-if="pending" class="space-y-2">
+      <UiSkeleton v-for="n in 6" :key="n" rounded="rounded-md" class="h-10" />
+    </div>
+    <UiPanel v-else :padded="false">
+    <div class="overflow-x-auto p-2">
+    <table class="w-full text-caption">
       <thead class="text-ink-gray-500 ink-label">
         <tr class="border-b border-ink-gray-200">
-          <th class="text-left py-2">Товар</th><th class="text-left">Цвет / размер</th><th class="text-left">SKU</th>
+          <th class="text-left p-3">Товар</th><th class="text-left">Цвет / размер</th><th class="text-left">SKU</th>
           <th class="text-right">Остаток</th><th></th>
         </tr>
       </thead>
       <tbody>
-        <tr v-for="v in stock" :key="v.id" class="border-b border-ink-gray-200/60">
+        <tr v-for="v in stock" :key="v.id" class="border-b border-ink-gray-200/60 last:border-0">
           <td class="py-2">{{ v.products?.title }}</td>
           <td>
             <span class="inline-flex items-center gap-1">
@@ -67,6 +71,8 @@ async function openHistory(variantId: string, label: string) {
         </tr>
       </tbody>
     </table>
+    </div>
+    </UiPanel>
 
     <!-- история движений склада -->
     <UModal v-model:open="history.open" :title="`История: ${history.title}`">

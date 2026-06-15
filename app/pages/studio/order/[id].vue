@@ -115,13 +115,11 @@ function specPlacements(item: { designs?: { spec?: unknown } | null }) {
 
 <template>
   <div v-if="order">
-    <div class="flex items-center justify-between mb-6">
-      <div>
-        <UiSectionLabel accent>Заказ #{{ shortId(order.id) }}</UiSectionLabel>
-        <h1 class="ink-display text-2xl mt-1">{{ STATUS_LABELS[order.status as OrderStatus] }}</h1>
-      </div>
-      <UButton to="/studio" color="neutral" variant="ghost" icon="i-lucide-arrow-left">К очереди</UButton>
-    </div>
+    <UiPageHeader :label="`Заказ #${shortId(order.id)}`" :title="STATUS_LABELS[order.status as OrderStatus]">
+      <template #actions>
+        <UButton to="/studio" color="neutral" variant="ghost" icon="i-lucide-arrow-left">К очереди</UButton>
+      </template>
+    </UiPageHeader>
 
     <!-- подарочная упаковка (§3.1): инструкция для цеха -->
     <div v-if="order.is_gift" class="mb-6 border-2 border-ink-burgundy/40 bg-ink-burgundy/5 rounded-lg p-4">

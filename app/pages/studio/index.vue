@@ -22,13 +22,11 @@ const shortId = (id: string) => id.slice(0, 8)
 
 <template>
   <div>
-    <div class="flex items-center justify-between mb-6">
-      <div>
-        <UiSectionLabel accent>Очередь</UiSectionLabel>
-        <h1 class="ink-display text-2xl mt-1">Производство</h1>
-      </div>
-      <UButton color="neutral" variant="ghost" icon="i-lucide-refresh-cw" @click="refresh()">Обновить</UButton>
-    </div>
+    <UiPageHeader label="Очередь" title="Производство" description="Доска заказов по этапам. Обновляется автоматически (Realtime).">
+      <template #actions>
+        <UButton color="neutral" variant="subtle" icon="i-lucide-refresh-cw" @click="refresh()">Обновить</UButton>
+      </template>
+    </UiPageHeader>
 
     <div class="flex gap-4 overflow-x-auto pb-4">
       <div v-for="col in COLUMNS" :key="col" class="shrink-0 w-64">
