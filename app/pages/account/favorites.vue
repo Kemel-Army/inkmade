@@ -15,12 +15,13 @@ async function rm(id: string) { await remove(id); await Promise.all([refreshP(),
 
 <template>
   <div>
-    <UiSectionLabel accent>Избранное</UiSectionLabel>
-    <h1 class="ink-display text-3xl mt-2 mb-6">Сохранённое</h1>
+    <UiPageHeader label="Избранное" title="Сохранённое" description="Понравившиеся товары и принты — в одном месте." />
 
     <section class="mb-10">
       <UiSectionLabel>Товары</UiSectionLabel>
-      <div v-if="pP" class="py-6 text-ink-gray-600">Загрузка…</div>
+      <div v-if="pP" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mt-3">
+        <UiSkeleton v-for="n in 4" :key="n" rounded="rounded-lg" class="aspect-square" />
+      </div>
       <div v-else-if="!products?.length" class="py-4 text-ink-gray-600 text-caption">
         Нет избранных товаров. <NuxtLink to="/catalog" class="text-ink-burgundy font-semibold">В каталог</NuxtLink>
       </div>
@@ -39,7 +40,9 @@ async function rm(id: string) { await remove(id); await Promise.all([refreshP(),
 
     <section>
       <UiSectionLabel>Принты</UiSectionLabel>
-      <div v-if="pPr" class="py-6 text-ink-gray-600">Загрузка…</div>
+      <div v-if="pPr" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mt-3">
+        <UiSkeleton v-for="n in 5" :key="n" rounded="rounded-lg" class="aspect-square" />
+      </div>
       <div v-else-if="!prints?.length" class="py-4 text-ink-gray-600 text-caption">Нет избранных принтов.</div>
       <div v-else class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mt-3">
         <div v-for="f in prints" :key="f.id" class="border border-ink-gray-200 rounded-lg overflow-hidden">

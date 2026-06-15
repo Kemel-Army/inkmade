@@ -38,8 +38,7 @@ async function onReorder(orderId: string) {
 
 <template>
   <div>
-    <UiSectionLabel accent>Заказы</UiSectionLabel>
-    <h1 class="ink-display text-3xl mt-2 mb-6">Мои заказы</h1>
+    <UiPageHeader label="Заказы" title="Мои заказы" description="История покупок, статусы и быстрый повтор заказа." />
 
     <div v-if="pending" class="space-y-3">
       <UiSkeleton v-for="n in 4" :key="n" rounded="rounded-lg" class="h-20" />

@@ -36,8 +36,7 @@ async function share(id: string) {
 
 <template>
   <div>
-    <UiSectionLabel accent>Дизайны</UiSectionLabel>
-    <h1 class="ink-display text-3xl mt-2 mb-6">Мои дизайны</h1>
+    <UiPageHeader label="Дизайны" title="Мои дизайны" description="Собранные в конструкторе принты — дорабатывайте и заказывайте." />
 
     <div v-if="pending" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
       <UiSkeleton v-for="n in 8" :key="n" rounded="rounded-lg" class="aspect-square" />

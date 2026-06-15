@@ -50,19 +50,28 @@ async function onDefault(id: string) { await setDefault(id); await refresh() }
 
 <template>
   <div class="max-w-2xl">
-    <UiSectionLabel accent>Доставка</UiSectionLabel>
-    <h1 class="ink-display text-3xl mt-2 mb-6">Адреса</h1>
+    <UiPageHeader label="Доставка" title="Адреса" description="Сохранённые адреса подставляются при оформлении заказа." />
 
-    <div v-if="pending" class="py-6 text-ink-gray-600">Загрузка…</div>
+    <div v-if="pending" class="space-y-3 mb-8">
+      <UiSkeleton v-for="n in 2" :key="n" rounded="rounded-lg" class="h-20" />
+    </div>
+
+    <UiEmptyState
+      v-else-if="!addresses?.length"
+      icon="i-lucide-map-pin"
+      title="Адресов пока нет"
+      text="Добавьте адрес ниже — он подставится в оформлении заказа."
+      class="mb-4"
+    />
+
     <div v-else class="space-y-3 mb-8">
-      <div v-if="!addresses?.length" class="text-ink-gray-600">Адресов пока нет.</div>
-      <div v-for="a in addresses" :key="a.id" class="flex items-start justify-between border border-ink-gray-200 rounded-lg p-4">
+      <div v-for="a in addresses" :key="a.id" class="flex items-start justify-between border border-ink-gray-200 rounded-lg p-4 bg-ink-white shadow-sm">
         <div>
           <p class="font-semibold">
             {{ a.full_name }}
             <UBadge v-if="a.is_default" color="primary" variant="subtle" size="xs" class="ml-1">по умолчанию</UBadge>
           </p>
-          <p class="text-caption text-ink-gray-600">{{ a.phone }} · {{ a.city }}, {{ a.address }}</p>
+          <p class="text-caption text-ink-gray-600 mt-0.5">{{ a.phone }} · {{ a.city }}, {{ a.address }}</p>
         </div>
         <div class="flex gap-1 shrink-0">
           <UButton v-if="!a.is_default" size="xs" color="neutral" variant="ghost" icon="i-lucide-star" @click="onDefault(a.id)" />
@@ -72,20 +81,21 @@ async function onDefault(id: string) { await setDefault(id); await refresh() }
       </div>
     </div>
 
-    <div class="border-t border-ink-gray-200 pt-5 space-y-3">
-      <UiSectionLabel>{{ editingId ? 'Редактировать адрес' : 'Новый адрес' }}</UiSectionLabel>
-      <div class="grid sm:grid-cols-2 gap-3">
-        <UInput v-model="form.full_name" placeholder="Имя и фамилия" />
-        <UInput v-model="form.phone" type="tel" placeholder="+7 700 000 00 00" />
-        <UInput v-model="form.city" placeholder="Город" />
-        <UInput v-model="form.address" placeholder="Улица, дом, кв." />
+    <UiPanel :title="editingId ? 'Редактировать адрес' : 'Новый адрес'" :icon="editingId ? 'i-lucide-pencil' : 'i-lucide-plus'">
+      <div class="space-y-4">
+        <div class="grid sm:grid-cols-2 gap-3">
+          <UInput v-model="form.full_name" placeholder="Имя и фамилия" />
+          <UInput v-model="form.phone" type="tel" placeholder="+7 700 000 00 00" />
+          <UInput v-model="form.city" placeholder="Город" />
+          <UInput v-model="form.address" placeholder="Улица, дом, кв." />
+        </div>
+        <div class="flex gap-2">
+          <UButton color="primary" :icon="editingId ? 'i-lucide-check' : 'i-lucide-plus'" :loading="adding" @click="onSubmit">
+            {{ editingId ? 'Сохранить' : 'Добавить адрес' }}
+          </UButton>
+          <UButton v-if="editingId" color="neutral" variant="ghost" @click="resetForm">Отмена</UButton>
+        </div>
       </div>
-      <div class="flex gap-2">
-        <UButton color="primary" :icon="editingId ? 'i-lucide-check' : 'i-lucide-plus'" :loading="adding" @click="onSubmit">
-          {{ editingId ? 'Сохранить' : 'Добавить адрес' }}
-        </UButton>
-        <UButton v-if="editingId" color="neutral" variant="ghost" @click="resetForm">Отмена</UButton>
-      </div>
-    </div>
+    </UiPanel>
   </div>
 </template>

@@ -48,35 +48,33 @@ async function changePassword() {
 </script>
 
 <template>
-  <div class="max-w-lg space-y-6">
-    <div>
-      <UiSectionLabel accent>Профиль</UiSectionLabel>
-      <h1 class="ink-display text-3xl mt-2">Личный кабинет</h1>
+  <div class="max-w-2xl">
+    <UiPageHeader label="Профиль" title="Личный кабинет" description="Ваши контактные данные и безопасность аккаунта." />
+
+    <div class="space-y-6">
+      <UiPanel title="Личные данные" icon="i-lucide-user">
+        <div class="space-y-4">
+          <UFormField label="Email">
+            <UInput :model-value="user?.email" disabled class="w-full" />
+          </UFormField>
+          <UFormField label="Имя и фамилия">
+            <UInput v-model="form.full_name" class="w-full" />
+          </UFormField>
+          <UFormField label="Телефон">
+            <UInput v-model="form.phone" type="tel" placeholder="+7 700 000 00 00" class="w-full" />
+          </UFormField>
+          <UButton color="primary" size="lg" :loading="saving" @click="saveProfile">Сохранить</UButton>
+        </div>
+      </UiPanel>
+
+      <UiPanel title="Смена пароля" icon="i-lucide-lock" subtitle="Минимум 8 символов: буквы и цифры.">
+        <div class="flex flex-wrap items-end gap-3">
+          <UFormField label="Новый пароль" class="flex-1 min-w-56">
+            <UInput v-model="pwd.value" type="password" autocomplete="new-password" class="w-full" />
+          </UFormField>
+          <UButton color="neutral" variant="subtle" size="lg" :loading="changingPwd" @click="changePassword">Изменить</UButton>
+        </div>
+      </UiPanel>
     </div>
-
-    <UCard>
-      <div class="space-y-4">
-        <UFormField label="Email">
-          <UInput :model-value="user?.email" disabled class="w-full" />
-        </UFormField>
-        <UFormField label="Имя и фамилия">
-          <UInput v-model="form.full_name" class="w-full" />
-        </UFormField>
-        <UFormField label="Телефон">
-          <UInput v-model="form.phone" type="tel" placeholder="+7 700 000 00 00" class="w-full" />
-        </UFormField>
-        <UButton color="primary" :loading="saving" @click="saveProfile">Сохранить</UButton>
-      </div>
-    </UCard>
-
-    <UCard>
-      <template #header><span class="font-semibold">Смена пароля</span></template>
-      <div class="flex items-end gap-2">
-        <UFormField label="Новый пароль" class="flex-1">
-          <UInput v-model="pwd.value" type="password" autocomplete="new-password" class="w-full" />
-        </UFormField>
-        <UButton color="neutral" variant="subtle" :loading="changingPwd" @click="changePassword">Изменить</UButton>
-      </div>
-    </UCard>
   </div>
 </template>
