@@ -12,13 +12,17 @@ const email = ref('')
 const password = ref('')
 const loading = ref(false)
 
+const CABINET_PREFIXES = ['/admin', '/studio', '/studio-designer', '/account']
+
 async function onSubmit() {
   loading.value = true
   try {
     await signIn(email.value, password.value)
-    // только внутренние пути: защита от open redirect на внешний домен.
     const raw = route.query.redirect as string | undefined
-    const redirect = raw && raw.startsWith('/') && !raw.startsWith('//') ? raw : homePath.value
+    // redirect используем только если это не кабинет чужой роли
+    const isValidRedirect = raw && raw.startsWith('/') && !raw.startsWith('//')
+    const isCabinetMismatch = isValidRedirect && CABINET_PREFIXES.some(p => raw!.startsWith(p)) && !raw!.startsWith(homePath.value)
+    const redirect = isValidRedirect && !isCabinetMismatch ? raw! : homePath.value
     await navigateTo(redirect)
   } catch (e) {
     toast.add({ title: 'Не удалось войти', description: (e as Error).message, color: 'error' })
