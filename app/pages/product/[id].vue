@@ -97,8 +97,10 @@ const priceFrom = computed(() =>
 // mockup выбранного цвета + общие mockup; fallback на все фото для старых товаров.
 const byPrimary = (a: { is_primary: boolean; sort_order: number }, b: { is_primary: boolean; sort_order: number }) =>
   Number(b.is_primary) - Number(a.is_primary) || a.sort_order - b.sort_order
+// скрытые фото (is_hidden) покупателю не показываем
+const visibleImages = computed(() => product.value!.product_images.filter(i => !i.is_hidden))
 const mockupImages = computed(() => {
-  const imgs = product.value!.product_images
+  const imgs = visibleImages.value
   const byColor = imgs.filter(i => i.kind === 'mockup' && i.color_hex === selectedColor.value)
   const common = imgs.filter(i => i.kind === 'mockup' && !i.color_hex)
   const combined = [...byColor, ...common]
@@ -107,7 +109,7 @@ const mockupImages = computed(() => {
 })
 // lifestyle «на людях» — гибрид: фото этого цвета + общие
 const lifestyleImages = computed(() => {
-  const imgs = product.value!.product_images
+  const imgs = visibleImages.value
   const byColor = imgs.filter(i => i.kind === 'lifestyle' && i.color_hex === selectedColor.value)
   const common = imgs.filter(i => i.kind === 'lifestyle' && !i.color_hex)
   return [...byColor, ...common].sort((a, b) => a.sort_order - b.sort_order)
@@ -128,7 +130,7 @@ watch([selectedColor, allImages], () => { activeImage.value = 0 })
             v-if="allImages[activeImage]"
             :key="allImages[activeImage]!.id"
             :src="allImages[activeImage]!.url"
-            :alt="product.title"
+            :alt="allImages[activeImage]!.alt || product.title"
             class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             sizes="(max-width: 768px) 100vw, 560px"
             loading="eager"

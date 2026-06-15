@@ -807,8 +807,10 @@ export type Database = {
       }
       product_images: {
         Row: {
+          alt: string | null
           color_hex: string | null
           id: string
+          is_hidden: boolean
           is_primary: boolean
           kind: string
           label: string | null
@@ -817,8 +819,10 @@ export type Database = {
           url: string
         }
         Insert: {
+          alt?: string | null
           color_hex?: string | null
           id?: string
+          is_hidden?: boolean
           is_primary?: boolean
           kind?: string
           label?: string | null
@@ -827,8 +831,10 @@ export type Database = {
           url: string
         }
         Update: {
+          alt?: string | null
           color_hex?: string | null
           id?: string
+          is_hidden?: boolean
           is_primary?: boolean
           kind?: string
           label?: string | null

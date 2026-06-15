@@ -287,13 +287,29 @@ export const useAdmin = () => {
     return data
   }
 
-  // Правка метаданных фото (метка ракурса, порядок).
+  // Правка метаданных фото (метка ракурса, порядок, видимость, alt, цвет, тип).
   async function updateImage(
     id: string,
-    patch: { label?: string | null; sort_order?: number; color_hex?: string | null; kind?: string },
+    patch: {
+      label?: string | null
+      sort_order?: number
+      color_hex?: string | null
+      kind?: string
+      is_hidden?: boolean
+      alt?: string | null
+    },
   ) {
     const { error } = await supabase.from('product_images').update(patch).eq('id', id)
     if (error) throw error
+  }
+
+  // Батч-переупорядочивание фото (drag-and-drop): новый sort_order по списку id.
+  async function reorderImages(orderedIds: string[]) {
+    await Promise.all(
+      orderedIds.map((id, idx) =>
+        supabase.from('product_images').update({ sort_order: idx }).eq('id', id),
+      ),
+    )
   }
 
   async function deleteImage(id: string) {
@@ -333,6 +349,7 @@ export const useAdmin = () => {
     uploadCatalogImage,
     addImage,
     updateImage,
+    reorderImages,
     deleteImage,
     setPrimaryImage,
   }
