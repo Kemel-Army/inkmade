@@ -303,6 +303,15 @@ export const useAdmin = () => {
     if (error) throw error
   }
 
+  // Замена файла в существующем слоте: грузим новый, обновляем url, чистим старый.
+  async function replaceImageFile(productId: string, id: string, file: File) {
+    const { data: old } = await supabase.from('product_images').select('url').eq('id', id).single()
+    const url = await uploadCatalogImage(productId, file)
+    const { error } = await supabase.from('product_images').update({ url }).eq('id', id)
+    if (error) throw error
+    if (old?.url) await removeCatalogObjects([old.url])
+  }
+
   // Батч-переупорядочивание фото (drag-and-drop): новый sort_order по списку id.
   async function reorderImages(orderedIds: string[]) {
     await Promise.all(
@@ -349,6 +358,7 @@ export const useAdmin = () => {
     uploadCatalogImage,
     addImage,
     updateImage,
+    replaceImageFile,
     reorderImages,
     deleteImage,
     setPrimaryImage,

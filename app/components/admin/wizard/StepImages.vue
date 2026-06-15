@@ -7,7 +7,7 @@ import type { ProductWithRelations } from '~/types/models'
 const props = defineProps<{ product: ProductWithRelations }>()
 const emit = defineEmits<{ changed: [] }>()
 
-const { uploadCatalogImage, addImage, updateImage, reorderImages, deleteImage, setPrimaryImage } = useAdmin()
+const { uploadCatalogImage, addImage, updateImage, replaceImageFile, reorderImages, deleteImage, setPrimaryImage } = useAdmin()
 const toast = useToast()
 
 type ImageRow = ProductWithRelations['product_images'][number]
@@ -118,11 +118,72 @@ async function onDelete(id: string) {
   if (!confirm('Удалить это фото?')) return
   await run(deleteImage(id))
 }
+
+// ── замена файла в слоте ──────────────────────────────────────────
+const replaceInput = ref<HTMLInputElement | null>(null)
+let replaceId: string | null = null
+function startReplace(id: string) { replaceId = id; replaceInput.value?.click() }
+async function onReplaceChange(e: Event) {
+  const f = (e.target as HTMLInputElement).files?.[0]
+  if (f && replaceId) await run(replaceImageFile(props.product.id, replaceId, f))
+  replaceId = null
+  ;(e.target as HTMLInputElement).value = ''
+}
+
+// ── лайтбокс (крупное превью + навигация) ─────────────────────────
+const allFlat = computed(() => [...(props.product.product_images ?? [])])
+const lightboxIndex = ref<number | null>(null)
+const lbImage = computed(() => lightboxIndex.value != null ? allFlat.value[lightboxIndex.value] : null)
+function openPreview(id: string) {
+  const i = allFlat.value.findIndex(x => x.id === id)
+  if (i >= 0) lightboxIndex.value = i
+}
+function lbStep(d: number) {
+  if (lightboxIndex.value == null || !allFlat.value.length) return
+  lightboxIndex.value = (lightboxIndex.value + d + allFlat.value.length) % allFlat.value.length
+}
+
+// ── массовое выделение ────────────────────────────────────────────
+const selectionMode = ref(false)
+const selected = ref<Set<string>>(new Set())
+function toggleSelect(id: string) {
+  const s = new Set(selected.value)
+  s.has(id) ? s.delete(id) : s.add(id)
+  selected.value = s
+}
+function exitSelection() { selectionMode.value = false; selected.value = new Set() }
+async function bulkHide(hidden: boolean) {
+  if (!selected.value.size) return
+  await run(Promise.all([...selected.value].map(id => updateImage(id, { is_hidden: hidden }))))
+  exitSelection()
+}
+async function bulkDelete() {
+  if (!selected.value.size) return
+  if (!confirm(`Удалить выбранные фото (${selected.value.size})?`)) return
+  await run(Promise.all([...selected.value].map(id => deleteImage(id))))
+  exitSelection()
+}
 </script>
 
 <template>
   <div class="space-y-8 max-w-4xl">
     <input ref="fileInput" type="file" accept="image/png,image/jpeg,image/webp,image/avif" multiple class="hidden" @change="onInputChange">
+    <input ref="replaceInput" type="file" accept="image/png,image/jpeg,image/webp,image/avif" class="hidden" @change="onReplaceChange">
+
+    <!-- панель управления медиа -->
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <UiSectionLabel>Медиа товара</UiSectionLabel>
+      <div v-if="!selectionMode">
+        <UButton size="sm" color="neutral" variant="ghost" icon="i-lucide-check-square" @click="selectionMode = true">Выбрать</UButton>
+      </div>
+      <div v-else class="flex flex-wrap items-center gap-2">
+        <span class="text-caption text-ink-gray-600">Выбрано: {{ selected.size }}</span>
+        <UButton size="sm" color="neutral" variant="subtle" icon="i-lucide-eye-off" :disabled="!selected.size" @click="bulkHide(true)">Скрыть</UButton>
+        <UButton size="sm" color="neutral" variant="subtle" icon="i-lucide-eye" :disabled="!selected.size" @click="bulkHide(false)">Показать</UButton>
+        <UButton size="sm" color="error" variant="subtle" icon="i-lucide-trash-2" :disabled="!selected.size" @click="bulkDelete">Удалить</UButton>
+        <UButton size="sm" color="neutral" variant="ghost" @click="exitSelection">Готово</UButton>
+      </div>
+    </div>
 
     <!-- фото изделия по цветам (mockup) -->
     <section>
@@ -165,9 +226,14 @@ async function onDelete(id: string) {
               <AdminMediaCard
                 :image="img"
                 :colors="colors"
+                :selection-mode="selectionMode"
+                :selected="selected.has(img.id)"
                 @primary="onPrimary(img.id)"
                 @toggle-hide="onToggleHide(img)"
                 @delete="onDelete(img.id)"
+                @replace="startReplace(img.id)"
+                @preview="openPreview(img.id)"
+                @toggle-select="toggleSelect(img.id)"
                 @update-label="(v: string) => onLabel(img.id, v)"
                 @update-alt="(v: string) => onAlt(img.id, v)"
                 @move-color="(hex: string | null) => onMoveColor(img.id, hex)"
@@ -246,5 +312,34 @@ async function onDelete(id: string) {
     <p v-if="!colors.length" class="text-ink-warning text-caption">
       Сначала добавьте цвета на шаге «Варианты» — тогда появятся слоты для фото по цветам.
     </p>
+
+    <!-- лайтбокс: крупное превью с навигацией -->
+    <UModal :open="lbImage !== null" :ui="{ content: 'max-w-3xl' }" @update:open="(v: boolean) => { if (!v) lightboxIndex = null }">
+      <template #content>
+        <div v-if="lbImage" class="relative bg-ink-black-soft">
+          <img :src="lbImage.url" :alt="lbImage.alt ?? ''" class="w-full max-h-[78vh] object-contain">
+          <UButton
+            icon="i-lucide-chevron-left" color="neutral" variant="solid" size="lg"
+            class="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70"
+            aria-label="Предыдущее" @click="lbStep(-1)"
+          />
+          <UButton
+            icon="i-lucide-chevron-right" color="neutral" variant="solid" size="lg"
+            class="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70"
+            aria-label="Следующее" @click="lbStep(1)"
+          />
+          <UButton
+            icon="i-lucide-x" color="neutral" variant="solid" size="sm"
+            class="absolute top-2 right-2 bg-black/50 hover:bg-black/70"
+            aria-label="Закрыть" @click="lightboxIndex = null"
+          />
+          <div class="absolute bottom-0 inset-x-0 p-3 bg-linear-to-t from-black/70 to-transparent text-ink-cream flex items-center gap-2 text-caption">
+            <span v-if="lbImage.label" class="ink-label">{{ lbImage.label }}</span>
+            <span v-if="lbImage.kind === 'lifestyle'" class="ink-label text-ink-cream/70">на людях</span>
+            <span v-if="lbImage.is_hidden" class="ink-label text-ink-cream/70">· скрыто</span>
+          </div>
+        </div>
+      </template>
+    </UModal>
   </div>
 </template>

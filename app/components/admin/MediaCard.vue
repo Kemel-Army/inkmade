@@ -9,16 +9,26 @@ type ImageRow = Database['public']['Tables']['product_images']['Row']
 const props = defineProps<{
   image: ImageRow
   colors: { hex: string; name: string }[]
+  selectionMode?: boolean
+  selected?: boolean
 }>()
 const emit = defineEmits<{
   primary: []
   toggleHide: []
   delete: []
+  replace: []
+  preview: []
+  toggleSelect: []
   updateLabel: [value: string]
   updateAlt: [value: string]
   moveColor: [hex: string | null]
   setKind: [kind: 'mockup' | 'lifestyle']
 }>()
+
+function onImageClick() {
+  if (props.selectionMode) emit('toggleSelect')
+  else emit('preview')
+}
 
 const menu = computed<DropdownMenuItem[][]>(() => {
   const groups: DropdownMenuItem[][] = [[
@@ -35,7 +45,6 @@ const menu = computed<DropdownMenuItem[][]>(() => {
     },
   ]]
 
-  // переместить в другой цвет
   const colorChildren: DropdownMenuItem[] = [
     {
       label: 'Общее (без цвета)',
@@ -57,6 +66,7 @@ const menu = computed<DropdownMenuItem[][]>(() => {
       icon: props.image.kind === 'lifestyle' ? 'i-lucide-shirt' : 'i-lucide-users',
       onSelect: () => emit('setKind', props.image.kind === 'lifestyle' ? 'mockup' : 'lifestyle'),
     },
+    { label: 'Заменить файл', icon: 'i-lucide-replace', onSelect: () => emit('replace') },
   ])
 
   groups.push([
@@ -69,26 +79,48 @@ const menu = computed<DropdownMenuItem[][]>(() => {
 <template>
   <div class="space-y-1">
     <div
-      class="relative border rounded-md overflow-hidden aspect-square bg-ink-gray-50 transition-opacity"
-      :class="image.is_hidden ? 'border-ink-gray-200 opacity-45' : 'border-ink-gray-200'"
+      class="relative border rounded-md overflow-hidden aspect-square bg-ink-gray-50 transition-all"
+      :class="[
+        image.is_hidden ? 'opacity-45' : '',
+        selected ? 'ring-2 ring-ink-burgundy border-ink-burgundy' : 'border-ink-gray-200',
+      ]"
     >
-      <img :src="image.url" :alt="image.alt ?? ''" class="w-full h-full object-cover">
+      <img
+        :src="image.url"
+        :alt="image.alt ?? ''"
+        class="w-full h-full object-cover"
+        :class="selectionMode ? 'cursor-pointer' : 'cursor-zoom-in'"
+        @click="onImageClick"
+      >
+
+      <!-- чекбокс выделения -->
+      <label
+        v-if="selectionMode"
+        class="absolute inset-0 flex items-start justify-start p-1.5 cursor-pointer"
+        @click.stop="emit('toggleSelect')"
+      >
+        <span
+          class="size-5 rounded-md border-2 flex items-center justify-center transition-colors"
+          :class="selected ? 'bg-ink-burgundy border-ink-burgundy text-ink-cream' : 'bg-white/80 border-white'"
+        >
+          <UIcon v-if="selected" name="i-lucide-check" class="size-3.5" />
+        </span>
+      </label>
 
       <!-- статусы -->
-      <div class="absolute top-1 left-1 flex flex-col gap-1">
+      <div v-if="!selectionMode" class="absolute top-1 left-1 flex flex-col gap-1">
         <UBadge v-if="image.is_primary" color="primary" size="xs">осн.</UBadge>
         <UBadge v-if="image.is_hidden" color="neutral" variant="solid" size="xs" icon="i-lucide-eye-off">скрыто</UBadge>
       </div>
 
-      <!-- метка цвета у lifestyle -->
       <span
-        v-if="image.kind === 'lifestyle' && image.color_hex"
+        v-if="image.kind === 'lifestyle' && image.color_hex && !selectionMode"
         class="absolute top-1 right-9 size-4 rounded-full border-2 border-white shadow"
         :style="{ backgroundColor: image.color_hex }"
       />
 
       <!-- меню действий -->
-      <UDropdownMenu :items="menu" :content="{ align: 'end' }">
+      <UDropdownMenu v-if="!selectionMode" :items="menu" :content="{ align: 'end' }">
         <UButton
           icon="i-lucide-ellipsis-vertical"
           color="neutral"
@@ -96,17 +128,16 @@ const menu = computed<DropdownMenuItem[][]>(() => {
           size="xs"
           class="absolute top-1 right-1 bg-black/50 hover:bg-black/70"
           aria-label="Действия с фото"
+          @click.stop
         />
       </UDropdownMenu>
     </div>
 
-    <!-- метка ракурса -->
     <UInput
       :model-value="image.label ?? ''"
       size="xs" placeholder="Ракурс (Перёд…)" class="w-full"
       @blur="(e: FocusEvent) => emit('updateLabel', (e.target as HTMLInputElement).value)"
     />
-    <!-- alt-текст (SEO / доступность) -->
     <UInput
       :model-value="image.alt ?? ''"
       size="xs" placeholder="Alt-текст (SEO)" variant="soft"
