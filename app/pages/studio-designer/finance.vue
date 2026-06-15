@@ -35,53 +35,49 @@ const eStatus: Record<string, string> = { accrued: 'начислено', paid: '
 </script>
 
 <template>
-  <div class="space-y-8">
-    <div>
-      <UiSectionLabel accent>Финансы</UiSectionLabel>
-      <h1 class="ink-display text-h2 mt-1">Баланс и выплаты</h1>
-    </div>
+  <div>
+    <UiPageHeader label="Финансы" title="Баланс и выплаты" description="Начисления роялти, доступный остаток и история выплат." />
 
-    <div class="grid sm:grid-cols-3 gap-4">
-      <div class="border border-ink-gray-200 rounded-lg p-5"><p class="ink-label text-ink-gray-600">Начислено</p><p class="text-h3 font-bold mt-1">{{ money(data?.balance?.total_earned) }}</p></div>
-      <div class="border border-ink-gray-200 rounded-lg p-5"><p class="ink-label text-ink-gray-600">Выплачено</p><p class="text-h3 font-bold mt-1">{{ money(data?.balance?.total_paid) }}</p></div>
-      <div class="border-2 border-ink-burgundy rounded-lg p-5 bg-ink-burgundy/5"><p class="ink-label text-ink-burgundy">Доступно</p><p class="text-h3 font-bold text-ink-burgundy mt-1">{{ money(data?.balance?.available) }}</p></div>
-    </div>
-
-    <!-- заявка на выплату -->
-    <div class="border border-ink-gray-200 rounded-lg p-5 max-w-md">
-      <UiSectionLabel>Запросить выплату</UiSectionLabel>
-      <div class="flex items-end gap-2 mt-3">
-        <UFormField label="Сумма, ₸" class="flex-1"><UInput v-model.number="amount" type="number" :min="MIN_PAYOUT" class="w-full" /></UFormField>
-        <UButton color="primary" :loading="requesting" @click="requestPayout">Запросить</UButton>
+    <div class="space-y-8">
+      <div class="grid sm:grid-cols-3 gap-4">
+        <UiStatCard label="Начислено" :value="money(data?.balance?.total_earned)" icon="i-lucide-trending-up" />
+        <UiStatCard label="Выплачено" :value="money(data?.balance?.total_paid)" icon="i-lucide-banknote" />
+        <UiStatCard label="Доступно" :value="money(data?.balance?.available)" icon="i-lucide-wallet" accent />
       </div>
-      <p class="text-caption text-ink-gray-400 mt-2">Минимум {{ MIN_PAYOUT.toLocaleString('ru') }} ₸. Ставка роялти: {{ data?.profile?.royalty_pct ?? '—' }}%.</p>
-    </div>
 
-    <!-- история начислений -->
-    <div>
-      <UiSectionLabel accent>История начислений</UiSectionLabel>
-      <div v-if="!data?.earnings?.length" class="py-4 text-ink-gray-600 text-caption">Начислений пока нет.</div>
-      <div v-else class="mt-3 border border-ink-gray-200 rounded-lg divide-y divide-ink-gray-200">
-        <div v-for="e in data!.earnings" :key="e.id" class="flex items-center justify-between p-3 text-caption">
-          <span class="truncate">{{ e.print_library?.title ?? 'принт' }}</span>
-          <span class="text-ink-gray-500">{{ e.rate_pct }}% · {{ new Date(e.created_at).toLocaleDateString('ru') }}</span>
-          <span>{{ eStatus[e.status] }}</span>
-          <span class="font-semibold text-ink-success">+{{ money(e.amount) }}</span>
+      <!-- заявка на выплату -->
+      <UiPanel title="Запросить выплату" icon="i-lucide-hand-coins" class="max-w-md">
+        <div class="flex items-end gap-2">
+          <UFormField label="Сумма, ₸" class="flex-1"><UInput v-model.number="amount" type="number" :min="MIN_PAYOUT" class="w-full" /></UFormField>
+          <UButton color="primary" size="lg" :loading="requesting" @click="requestPayout">Запросить</UButton>
         </div>
-      </div>
-    </div>
+        <p class="text-caption text-ink-gray-400 mt-3">Минимум {{ MIN_PAYOUT.toLocaleString('ru') }} ₸. Ставка роялти: {{ data?.profile?.royalty_pct ?? '—' }}%.</p>
+      </UiPanel>
 
-    <!-- выплаты -->
-    <div>
-      <UiSectionLabel accent>Выплаты</UiSectionLabel>
-      <div v-if="!data?.payouts?.length" class="py-4 text-ink-gray-600 text-caption">Выплат пока не было.</div>
-      <div v-else class="mt-3 border border-ink-gray-200 rounded-lg divide-y divide-ink-gray-200">
-        <div v-for="p in data!.payouts" :key="p.id" class="flex items-center justify-between p-3 text-caption">
-          <span>{{ new Date(p.requested_at).toLocaleDateString('ru') }}</span>
-          <span class="font-semibold">{{ money(p.amount) }}</span>
-          <UBadge :color="payoutColor(p.status)" variant="subtle" size="xs">{{ p.status }}</UBadge>
+      <!-- история начислений -->
+      <UiPanel title="История начислений" icon="i-lucide-list" :padded="false">
+        <div v-if="!data?.earnings?.length" class="px-6 py-4 text-ink-gray-600 text-caption">Начислений пока нет.</div>
+        <div v-else class="divide-y divide-ink-gray-200">
+          <div v-for="e in data!.earnings" :key="e.id" class="flex items-center justify-between gap-3 px-6 py-3 text-caption">
+            <span class="truncate">{{ e.print_library?.title ?? 'принт' }}</span>
+            <span class="text-ink-gray-500 shrink-0">{{ e.rate_pct }}% · {{ new Date(e.created_at).toLocaleDateString('ru') }}</span>
+            <span class="shrink-0">{{ eStatus[e.status] }}</span>
+            <span class="font-semibold text-ink-success shrink-0">+{{ money(e.amount) }}</span>
+          </div>
         </div>
-      </div>
+      </UiPanel>
+
+      <!-- выплаты -->
+      <UiPanel title="Выплаты" icon="i-lucide-arrow-down-to-line" :padded="false">
+        <div v-if="!data?.payouts?.length" class="px-6 py-4 text-ink-gray-600 text-caption">Выплат пока не было.</div>
+        <div v-else class="divide-y divide-ink-gray-200">
+          <div v-for="p in data!.payouts" :key="p.id" class="flex items-center justify-between gap-3 px-6 py-3 text-caption">
+            <span>{{ new Date(p.requested_at).toLocaleDateString('ru') }}</span>
+            <span class="font-semibold">{{ money(p.amount) }}</span>
+            <UBadge :color="payoutColor(p.status)" variant="subtle" size="xs">{{ p.status }}</UBadge>
+          </div>
+        </div>
+      </UiPanel>
     </div>
   </div>
 </template>

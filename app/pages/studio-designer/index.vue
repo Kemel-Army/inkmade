@@ -39,76 +39,55 @@ const money = (n: number | null | undefined) => `${Math.round(Number(n) || 0).to
 </script>
 
 <template>
-  <div class="space-y-8">
-    <div>
-      <UiSectionLabel accent>Студия</UiSectionLabel>
-      <h1 class="ink-display text-h2 mt-1">Привет, {{ data?.profile?.display_name || 'дизайнер' }}</h1>
-    </div>
+  <div>
+    <UiPageHeader label="Студия" :title="`Привет, ${data?.profile?.display_name || 'дизайнер'}`" description="Заработок, статус принтов и последние продажи." />
 
-    <div v-if="!data?.profile" class="border border-ink-warning/40 bg-ink-warning/5 rounded-lg p-4 text-caption">
+    <div v-if="!data?.profile" class="border border-ink-warning/40 bg-ink-warning/5 rounded-lg p-4 text-caption mb-6">
       Профиль дизайнера ещё не настроен администратором. Загрузка принтов и роялти станут доступны после активации.
     </div>
 
-    <!-- баланс -->
-    <div class="grid sm:grid-cols-3 gap-4">
-      <div class="border border-ink-gray-200 rounded-lg p-5">
-        <p class="ink-label text-ink-gray-600">Заработано всего</p>
-        <p class="text-h2 ink-display text-ink-black mt-1">{{ money(data?.balance?.total_earned) }}</p>
+    <div class="space-y-8">
+      <!-- баланс -->
+      <div class="grid sm:grid-cols-3 gap-4">
+        <UiStatCard label="Заработано всего" :value="money(data?.balance?.total_earned)" icon="i-lucide-trending-up" />
+        <UiStatCard label="Доступно к выводу" :value="money(data?.balance?.available)" icon="i-lucide-wallet" accent hint="Запросить выплату в разделе «Финансы»" />
+        <UiStatCard label="Ставка роялти" :value="`${data?.profile?.royalty_pct ?? '—'}%`" icon="i-lucide-percent" />
       </div>
-      <div class="border-2 border-ink-burgundy rounded-lg p-5 bg-ink-burgundy/5">
-        <p class="ink-label text-ink-burgundy">Доступно к выводу</p>
-        <p class="text-h2 ink-display text-ink-burgundy mt-1">{{ money(data?.balance?.available) }}</p>
-        <UButton to="/studio-designer/finance" size="xs" color="primary" variant="link" class="mt-1 px-0">Запросить выплату →</UButton>
-      </div>
-      <div class="border border-ink-gray-200 rounded-lg p-5">
-        <p class="ink-label text-ink-gray-600">Ставка роялти</p>
-        <p class="text-h2 ink-display mt-1">{{ data?.profile?.royalty_pct ?? '—' }}%</p>
-      </div>
-    </div>
 
-    <!-- счётчики принтов -->
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-      <div class="border border-ink-gray-200 rounded-lg p-4 text-center">
-        <p class="text-h3 font-bold">{{ counts.total }}</p><p class="text-caption text-ink-gray-600">всего принтов</p>
+      <!-- счётчики принтов -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <UiStatCard label="Всего принтов" :value="counts.total" />
+        <UiStatCard label="На модерации" :value="counts.pending" />
+        <UiStatCard label="Одобрено" :value="counts.approved" />
+        <UiStatCard label="Отклонено" :value="counts.rejected" />
       </div>
-      <div class="border border-ink-gray-200 rounded-lg p-4 text-center">
-        <p class="text-h3 font-bold text-ink-warning">{{ counts.pending }}</p><p class="text-caption text-ink-gray-600">на модерации</p>
-      </div>
-      <div class="border border-ink-gray-200 rounded-lg p-4 text-center">
-        <p class="text-h3 font-bold text-ink-success">{{ counts.approved }}</p><p class="text-caption text-ink-gray-600">одобрено</p>
-      </div>
-      <div class="border border-ink-gray-200 rounded-lg p-4 text-center">
-        <p class="text-h3 font-bold text-ink-error">{{ counts.rejected }}</p><p class="text-caption text-ink-gray-600">отклонено</p>
-      </div>
-    </div>
 
-    <!-- топ принтов -->
-    <div v-if="topPrints.length">
-      <UiSectionLabel accent>Топ принтов</UiSectionLabel>
-      <div class="mt-3 divide-y divide-ink-gray-200 border border-ink-gray-200 rounded-lg">
-        <div v-for="(p, i) in topPrints" :key="p.id" class="flex items-center justify-between p-3 text-caption">
-          <span class="flex items-center gap-2">
-            <span class="ink-label text-ink-gray-400">#{{ i + 1 }}</span>{{ p.title }}
-          </span>
-          <span class="text-ink-gray-500">{{ p.sales }} продаж</span>
-          <span class="font-semibold text-ink-success">{{ money(p.royalty) }}</span>
+      <!-- топ принтов -->
+      <UiPanel v-if="topPrints.length" title="Топ принтов" icon="i-lucide-award" :padded="false">
+        <div class="divide-y divide-ink-gray-200">
+          <div v-for="(p, i) in topPrints" :key="p.id" class="flex items-center justify-between gap-3 px-6 py-3 text-caption">
+            <span class="flex items-center gap-2 min-w-0">
+              <span class="ink-label text-ink-gray-400">#{{ i + 1 }}</span><span class="truncate">{{ p.title }}</span>
+            </span>
+            <span class="text-ink-gray-500 shrink-0">{{ p.sales }} продаж</span>
+            <span class="font-semibold text-ink-success shrink-0">{{ money(p.royalty) }}</span>
+          </div>
         </div>
-      </div>
-    </div>
+      </UiPanel>
 
-    <!-- последние продажи -->
-    <div>
-      <UiSectionLabel accent>Последние продажи</UiSectionLabel>
-      <div v-if="!data?.earnings?.length" class="py-6 text-ink-gray-600 text-caption">
-        Продаж пока нет. Загрузите принты в <NuxtLink to="/studio-designer/prints" class="text-ink-burgundy font-semibold">разделе «Мои принты»</NuxtLink> — после одобрения они появятся в каталоге.
-      </div>
-      <div v-else class="mt-3 divide-y divide-ink-gray-200 border border-ink-gray-200 rounded-lg">
-        <div v-for="e in data!.earnings" :key="e.id" class="flex items-center justify-between p-3 text-caption">
-          <span>{{ e.print_library?.title ?? 'принт' }}</span>
-          <span class="text-ink-gray-500">{{ new Date(e.created_at).toLocaleDateString('ru') }}</span>
-          <span class="font-semibold text-ink-success">+{{ money(e.amount) }}</span>
+      <!-- последние продажи -->
+      <UiPanel title="Последние продажи" icon="i-lucide-receipt" :padded="false">
+        <div v-if="!data?.earnings?.length" class="px-6 py-6 text-ink-gray-600 text-caption">
+          Продаж пока нет. Загрузите принты в <NuxtLink to="/studio-designer/prints" class="text-ink-burgundy font-semibold">разделе «Мои принты»</NuxtLink> — после одобрения они появятся в каталоге.
         </div>
-      </div>
+        <div v-else class="divide-y divide-ink-gray-200">
+          <div v-for="e in data!.earnings" :key="e.id" class="flex items-center justify-between gap-3 px-6 py-3 text-caption">
+            <span class="truncate">{{ e.print_library?.title ?? 'принт' }}</span>
+            <span class="text-ink-gray-500 shrink-0">{{ new Date(e.created_at).toLocaleDateString('ru') }}</span>
+            <span class="font-semibold text-ink-success shrink-0">+{{ money(e.amount) }}</span>
+          </div>
+        </div>
+      </UiPanel>
     </div>
   </div>
 </template>

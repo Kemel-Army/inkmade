@@ -65,57 +65,59 @@ async function save() {
 </script>
 
 <template>
-  <div class="space-y-6 max-w-lg">
-    <div>
-      <UiSectionLabel accent>Профиль</UiSectionLabel>
-      <h1 class="ink-display text-h2 mt-1">Витрина и реквизиты</h1>
-    </div>
+  <div class="max-w-lg">
+    <UiPageHeader label="Профиль" title="Витрина и реквизиты" description="Публичная витрина автора и данные для выплат роялти." />
 
     <div v-if="!profile" class="border border-ink-warning/40 bg-ink-warning/5 rounded-lg p-4 text-caption">
       Профиль дизайнера ещё не активирован администратором.
     </div>
 
-    <template v-else>
-      <!-- аватар -->
-      <div class="flex items-center gap-4">
-        <div class="size-16 rounded-full bg-ink-gray-200 overflow-hidden shrink-0">
-          <img v-if="profile.avatar_url" :src="profile.avatar_url" alt="Аватар" class="w-full h-full object-cover">
-          <div v-else class="w-full h-full flex items-center justify-center text-ink-gray-400">
-            <UIcon name="i-lucide-user" class="size-6" />
+    <div v-else class="space-y-6">
+      <UiPanel title="Витрина" icon="i-lucide-store">
+        <div class="space-y-4">
+          <!-- аватар -->
+          <div class="flex items-center gap-4">
+            <div class="size-16 rounded-full bg-ink-gray-200 overflow-hidden shrink-0">
+              <img v-if="profile.avatar_url" :src="profile.avatar_url" alt="Аватар" class="w-full h-full object-cover">
+              <div v-else class="w-full h-full flex items-center justify-center text-ink-gray-400">
+                <UIcon name="i-lucide-user" class="size-6" />
+              </div>
+            </div>
+            <input ref="avatarInput" type="file" accept="image/png,image/jpeg,image/webp" class="hidden" @change="onAvatarPick">
+            <UButton color="neutral" variant="subtle" size="sm" icon="i-lucide-image-plus" :loading="avatarUploading" @click="avatarInput?.click()">
+              Загрузить аватар
+            </UButton>
+          </div>
+
+          <UFormField label="Псевдоним (для витрины)"><UInput v-model="form.display_name" class="w-full" /></UFormField>
+          <UFormField label="О себе"><UTextarea v-model="form.bio" :rows="3" class="w-full" /></UFormField>
+          <UCheckbox v-model="form.is_public" label="Показывать публичную витрину автора" />
+          <NuxtLink
+            v-if="profile?.is_public"
+            :to="`/designer/${profile.id}`" target="_blank"
+            class="inline-flex items-center gap-1 text-caption text-ink-burgundy font-semibold"
+          >
+            <UIcon name="i-lucide-external-link" class="size-3" /> Открыть мою витрину
+          </NuxtLink>
+        </div>
+      </UiPanel>
+
+      <UiPanel title="Реквизиты для выплат" icon="i-lucide-credit-card">
+        <div class="space-y-4">
+          <UFormField label="Налоговый статус">
+            <USelect v-model="form.tax_status" :items="taxItems" value-key="value" class="w-full" />
+          </UFormField>
+          <div class="grid grid-cols-2 gap-3">
+            <UFormField label="Банк"><UInput v-model="form.payout_bank" class="w-full" /></UFormField>
+            <UFormField label="Счёт/карта (IBAN)"><UInput v-model="form.payout_account" class="w-full" /></UFormField>
           </div>
         </div>
-        <input ref="avatarInput" type="file" accept="image/*" class="hidden" @change="onAvatarPick">
-        <UButton color="neutral" variant="subtle" size="sm" icon="i-lucide-image-plus" :loading="avatarUploading" @click="avatarInput?.click()">
-          Загрузить аватар
-        </UButton>
+      </UiPanel>
+
+      <div class="flex items-center justify-between gap-4">
+        <UButton color="primary" size="lg" :loading="saving" @click="save">Сохранить</UButton>
+        <p class="text-caption text-ink-gray-400">Оферта дизайнера v1.0. Налоги по выбранному статусу — на вас.</p>
       </div>
-
-      <UFormField label="Псевдоним (для витрины)"><UInput v-model="form.display_name" class="w-full" /></UFormField>
-      <UFormField label="О себе"><UTextarea v-model="form.bio" :rows="3" class="w-full" /></UFormField>
-      <UCheckbox v-model="form.is_public" label="Показывать публичную витрину автора" />
-      <NuxtLink
-        v-if="profile?.is_public"
-        :to="`/designer/${profile.id}`" target="_blank"
-        class="inline-flex items-center gap-1 text-caption text-ink-burgundy font-semibold"
-      >
-        <UIcon name="i-lucide-external-link" class="size-3" /> Открыть мою витрину
-      </NuxtLink>
-
-      <UFormField label="Налоговый статус">
-        <USelect v-model="form.tax_status" :items="taxItems" value-key="value" class="w-full" />
-      </UFormField>
-
-      <UiSectionLabel>Реквизиты для выплат</UiSectionLabel>
-      <div class="grid grid-cols-2 gap-3">
-        <UInput v-model="form.payout_bank" placeholder="Банк" />
-        <UInput v-model="form.payout_account" placeholder="Счёт/карта (IBAN)" />
-      </div>
-
-      <UButton color="primary" :loading="saving" @click="save">Сохранить</UButton>
-
-      <div class="border-t border-ink-gray-200 pt-4 text-caption text-ink-gray-600">
-        <p>Оферта дизайнера и условия роялти — версия v1.0. Ответственность за налоги по выбранному статусу — на вас.</p>
-      </div>
-    </template>
+    </div>
   </div>
 </template>

@@ -98,30 +98,36 @@ const modLabel: Record<string, string> = { pending: 'На модерации', a
 </script>
 
 <template>
-  <div class="space-y-8">
-    <div>
-      <UiSectionLabel accent>Каталог</UiSectionLabel>
-      <h1 class="ink-display text-h2 mt-1">Мои принты</h1>
-    </div>
+  <div>
+    <UiPageHeader label="Каталог" title="Мои принты" description="Загрузка на модерацию, статусы и продажи по каждому принту." />
 
-    <!-- загрузка -->
-    <div class="border border-ink-gray-200 rounded-lg p-5 space-y-3 max-w-xl">
-      <UiSectionLabel>Загрузить принт</UiSectionLabel>
-      <UInput v-model="form.title" placeholder="Название принта" class="w-full" />
-      <UInput v-model="form.tags" placeholder="Теги через запятую (стрит, граффити…)" class="w-full" />
-      <UButton color="neutral" variant="subtle" icon="i-lucide-upload" @click="fileInput?.click()">
-        {{ pickedFile ? 'Файл выбран' : 'Выбрать файл (PNG/SVG, высокое разрешение)' }}
-      </UButton>
-      <input ref="fileInput" type="file" accept="image/*,.svg,.pdf" class="hidden" @change="onPick">
-      <UCheckbox v-model="form.agree" label="Дизайн мой, я отвечаю за авторские права (оферта)" />
-      <UButton color="primary" icon="i-lucide-send" :loading="uploading" @click="onUpload">Отправить на модерацию</UButton>
-    </div>
+    <div class="space-y-8">
+      <!-- загрузка -->
+      <UiPanel title="Загрузить принт" icon="i-lucide-upload" class="max-w-xl">
+        <div class="space-y-3">
+          <UInput v-model="form.title" placeholder="Название принта" class="w-full" />
+          <UInput v-model="form.tags" placeholder="Теги через запятую (стрит, граффити…)" class="w-full" />
+          <UButton color="neutral" variant="subtle" icon="i-lucide-file-up" block @click="fileInput?.click()">
+            {{ pickedFile ? 'Файл выбран' : 'Выбрать файл (PNG/JPG/PDF, высокое разрешение)' }}
+          </UButton>
+          <input ref="fileInput" type="file" accept="image/png,image/jpeg,image/webp,.pdf" class="hidden" @change="onPick">
+          <UCheckbox v-model="form.agree" label="Дизайн мой, я отвечаю за авторские права (оферта)" />
+          <UButton color="primary" size="lg" icon="i-lucide-send" :loading="uploading" @click="onUpload">Отправить на модерацию</UButton>
+        </div>
+      </UiPanel>
 
-    <!-- список -->
-    <div>
-      <div v-if="pending" class="py-6 text-ink-gray-600">Загрузка…</div>
-      <div v-else-if="!prints?.length" class="py-6 text-ink-gray-600 text-caption">Принтов пока нет — загрузите первый выше.</div>
-      <div v-else class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+      <!-- список -->
+      <div>
+        <div v-if="pending" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          <UiSkeleton v-for="n in 4" :key="n" rounded="rounded-lg" class="aspect-square" />
+        </div>
+        <UiEmptyState
+          v-else-if="!prints?.length"
+          icon="i-lucide-image"
+          title="Принтов пока нет"
+          text="Загрузите первый принт в форме выше — после модерации он появится в каталоге."
+        />
+        <div v-else class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         <div v-for="p in prints" :key="p.id" class="border border-ink-gray-200 rounded-lg overflow-hidden">
           <div class="aspect-square bg-ink-gray-200">
             <img v-if="p.thumbnail_url" :src="p.thumbnail_url" :alt="p.title" class="w-full h-full object-contain">
@@ -141,6 +147,7 @@ const modLabel: Record<string, string> = { pending: 'На модерации', a
             </div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   </div>
