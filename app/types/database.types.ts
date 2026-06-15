@@ -807,22 +807,31 @@ export type Database = {
       }
       product_images: {
         Row: {
+          color_hex: string | null
           id: string
           is_primary: boolean
+          kind: string
+          label: string | null
           product_id: string
           sort_order: number
           url: string
         }
         Insert: {
+          color_hex?: string | null
           id?: string
           is_primary?: boolean
+          kind?: string
+          label?: string | null
           product_id: string
           sort_order?: number
           url: string
         }
         Update: {
+          color_hex?: string | null
           id?: string
           is_primary?: boolean
+          kind?: string
+          label?: string | null
           product_id?: string
           sort_order?: number
           url?: string

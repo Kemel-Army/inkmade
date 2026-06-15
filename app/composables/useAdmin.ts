@@ -258,14 +258,42 @@ export const useAdmin = () => {
     return data.publicUrl
   }
 
-  async function addImage(productId: string, url: string, isPrimary = false, sortOrder = 0) {
+  // Фото с привязкой к цвету/типу/ракурсу (фото-слоты, миграция 0044).
+  async function addImage(
+    productId: string,
+    url: string,
+    opts: {
+      isPrimary?: boolean
+      sortOrder?: number
+      colorHex?: string | null
+      kind?: 'mockup' | 'lifestyle'
+      label?: string | null
+    } = {},
+  ) {
     const { data, error } = await supabase
       .from('product_images')
-      .insert({ product_id: productId, url, is_primary: isPrimary, sort_order: sortOrder })
+      .insert({
+        product_id: productId,
+        url,
+        is_primary: opts.isPrimary ?? false,
+        sort_order: opts.sortOrder ?? 0,
+        color_hex: opts.colorHex ?? null,
+        kind: opts.kind ?? 'mockup',
+        label: opts.label ?? null,
+      })
       .select()
       .single()
     if (error) throw error
     return data
+  }
+
+  // Правка метаданных фото (метка ракурса, порядок).
+  async function updateImage(
+    id: string,
+    patch: { label?: string | null; sort_order?: number; color_hex?: string | null; kind?: string },
+  ) {
+    const { error } = await supabase.from('product_images').update(patch).eq('id', id)
+    if (error) throw error
   }
 
   async function deleteImage(id: string) {
@@ -304,6 +332,7 @@ export const useAdmin = () => {
     deleteZone,
     uploadCatalogImage,
     addImage,
+    updateImage,
     deleteImage,
     setPrimaryImage,
   }

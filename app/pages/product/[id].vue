@@ -93,11 +93,29 @@ const priceFrom = computed(() =>
   product.value!.base_price + (selectedMaterial.value?.surcharge ?? 0),
 )
 
-const gallery = computed(() => {
-  const imgs = [...product.value!.product_images].sort((a, b) => Number(b.is_primary) - Number(a.is_primary) || a.sort_order - b.sort_order)
-  return imgs
+// Галерея по выбранному цвету (фото-слоты, миграция 0044):
+// mockup выбранного цвета + общие mockup; fallback на все фото для старых товаров.
+const byPrimary = (a: { is_primary: boolean; sort_order: number }, b: { is_primary: boolean; sort_order: number }) =>
+  Number(b.is_primary) - Number(a.is_primary) || a.sort_order - b.sort_order
+const mockupImages = computed(() => {
+  const imgs = product.value!.product_images
+  const byColor = imgs.filter(i => i.kind === 'mockup' && i.color_hex === selectedColor.value)
+  const common = imgs.filter(i => i.kind === 'mockup' && !i.color_hex)
+  const combined = [...byColor, ...common]
+  const list = combined.length ? combined : imgs.filter(i => i.kind === 'mockup')
+  return [...(list.length ? list : imgs)].sort(byPrimary)
 })
+// lifestyle «на людях» — гибрид: фото этого цвета + общие
+const lifestyleImages = computed(() => {
+  const imgs = product.value!.product_images
+  const byColor = imgs.filter(i => i.kind === 'lifestyle' && i.color_hex === selectedColor.value)
+  const common = imgs.filter(i => i.kind === 'lifestyle' && !i.color_hex)
+  return [...byColor, ...common].sort((a, b) => a.sort_order - b.sort_order)
+})
+const allImages = computed(() => [...mockupImages.value, ...lifestyleImages.value])
 const activeImage = ref(0)
+// при смене цвета/состава галереи — на первое фото
+watch([selectedColor, allImages], () => { activeImage.value = 0 })
 </script>
 
 <template>
@@ -107,9 +125,9 @@ const activeImage = ref(0)
       <div class="group relative aspect-square rounded-lg overflow-hidden bg-ink-gray-50">
         <Transition name="img-fade" mode="out-in">
           <NuxtImg
-            v-if="gallery[activeImage]"
-            :key="gallery[activeImage]!.id"
-            :src="gallery[activeImage]!.url"
+            v-if="allImages[activeImage]"
+            :key="allImages[activeImage]!.id"
+            :src="allImages[activeImage]!.url"
             :alt="product.title"
             class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             sizes="(max-width: 768px) 100vw, 560px"
@@ -119,18 +137,42 @@ const activeImage = ref(0)
             <UIcon name="i-lucide-image" class="size-12" />
           </div>
         </Transition>
+        <!-- метка ракурса текущего фото -->
+        <span
+          v-if="allImages[activeImage]?.label"
+          class="absolute bottom-2 left-2 ink-label bg-ink-black/70 text-ink-cream px-2 py-1 rounded-sm"
+        >{{ allImages[activeImage]!.label }}</span>
       </div>
-      <div v-if="gallery.length > 1" class="flex gap-2">
+
+      <!-- миниатюры: изделие -->
+      <div v-if="mockupImages.length > 1" class="flex gap-2 flex-wrap">
         <button
-          v-for="(img, i) in gallery"
+          v-for="(img, i) in mockupImages"
           :key="img.id"
           class="size-16 rounded-md overflow-hidden border-2 transition-colors"
           :class="i === activeImage ? 'border-ink-burgundy' : 'border-ink-gray-200 hover:border-ink-gray-400'"
-          :aria-label="`Фото ${i + 1}`"
+          :aria-label="img.label || `Фото ${i + 1}`"
           @click="activeImage = i"
         >
           <NuxtImg :src="img.url" alt="" class="w-full h-full object-cover" sizes="64px" loading="lazy" />
         </button>
+      </div>
+
+      <!-- миниатюры: на людях -->
+      <div v-if="lifestyleImages.length">
+        <p class="ink-label text-ink-gray-600 mb-2">На людях</p>
+        <div class="flex gap-2 flex-wrap">
+          <button
+            v-for="(img, i) in lifestyleImages"
+            :key="img.id"
+            class="size-16 rounded-md overflow-hidden border-2 transition-colors"
+            :class="mockupImages.length + i === activeImage ? 'border-ink-burgundy' : 'border-ink-gray-200 hover:border-ink-gray-400'"
+            :aria-label="`На людях ${i + 1}`"
+            @click="activeImage = mockupImages.length + i"
+          >
+            <NuxtImg :src="img.url" alt="" class="w-full h-full object-cover" sizes="64px" loading="lazy" />
+          </button>
+        </div>
       </div>
     </div>
 
