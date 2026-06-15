@@ -35,7 +35,7 @@ useSeoMeta({
     <UiSectionLabel accent>Дизайн с INKMADE</UiSectionLabel>
     <h1 class="ink-display text-h2">{{ productTitle }}</h1>
 
-    <div class="border border-ink-gray-200 rounded-lg overflow-hidden bg-ink-white aspect-square max-w-md mx-auto flex items-center justify-center">
+    <div class="border border-ink-gray-200 rounded-lg shadow-sm overflow-hidden bg-ink-white aspect-square max-w-md mx-auto flex items-center justify-center">
       <img v-if="data.preview" :src="data.preview" :alt="`Дизайн — ${productTitle}`" class="w-full h-full object-contain">
       <UIcon v-else name="i-lucide-shapes" class="size-12 text-ink-gray-400" />
     </div>

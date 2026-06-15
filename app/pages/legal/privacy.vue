@@ -11,6 +11,8 @@ useHead({ title: 'Политика конфиденциальности — INKM
       Редакция {{ LEGAL.privacyVersion }} · в силе с {{ LEGAL.effectiveDate }} · юрисдикция: {{ LEGAL.jurisdiction }}
     </p>
 
+    <UiPanel>
+    <div class="space-y-6">
     <section class="space-y-2">
       <h2 class="text-h3 font-bold">Какие данные мы собираем</h2>
       <p>Email и имя при регистрации, контакты и адрес доставки при оформлении заказа, загруженные
@@ -42,6 +44,8 @@ useHead({ title: 'Политика конфиденциальности — INKM
         согласие на обработку, написав на
         <a :href="`mailto:${LEGAL.supportEmail}`" class="text-ink-burgundy font-semibold">{{ LEGAL.supportEmail }}</a>.</p>
     </section>
+    </div>
+    </UiPanel>
 
     <NuxtLink to="/" class="text-ink-burgundy inline-flex items-center gap-1"><UIcon name="i-lucide-arrow-left" class="size-4" />На главную</NuxtLink>
   </article>

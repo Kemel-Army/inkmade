@@ -12,6 +12,8 @@ useHead({ title: 'Условия использования — INKMADE' })
     </p>
     <p class="text-ink-gray-600">Используя INKMADE, вы соглашаетесь с условиями ниже. Применимое право — {{ LEGAL.jurisdiction }}.</p>
 
+    <UiPanel>
+    <div class="space-y-6">
     <section class="space-y-2">
       <h2 class="text-h3 font-bold">1. Авторские права на загружаемые материалы</h2>
       <p>Загружая изображение, текст или иной материал для нанесения, вы подтверждаете, что обладаете
@@ -39,6 +41,8 @@ useHead({ title: 'Условия использования — INKMADE' })
       <p>Поскольку изделие создано индивидуально, возврат возможен при браке или ошибке производства.
         О браке сообщайте сразу с фотографией.</p>
     </section>
+    </div>
+    </UiPanel>
 
     <NuxtLink to="/" class="text-ink-burgundy inline-flex items-center gap-1"><UIcon name="i-lucide-arrow-left" class="size-4" />На главную</NuxtLink>
   </article>

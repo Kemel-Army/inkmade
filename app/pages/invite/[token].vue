@@ -36,7 +36,10 @@ onMounted(async () => {
 <template>
   <div class="max-w-md mx-auto py-12 text-center space-y-4">
     <UiSectionLabel accent>Приглашение</UiSectionLabel>
-    <div v-if="state === 'loading'" class="text-ink-gray-600">Активируем приглашение…</div>
+    <div v-if="state === 'loading'" class="flex flex-col items-center gap-3 text-ink-gray-600 py-6">
+      <UIcon name="i-lucide-loader-circle" class="size-7 animate-spin text-ink-burgundy" />
+      Активируем приглашение…
+    </div>
 
     <template v-else-if="state === 'ok'">
       <h1 class="ink-display text-h2">Добро пожаловать в студию!</h1>

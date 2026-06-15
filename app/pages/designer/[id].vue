@@ -57,9 +57,14 @@ useSeoMeta({
     <!-- принты автора -->
     <div>
       <UiSectionLabel>Принты ({{ data.prints.length }})</UiSectionLabel>
-      <div v-if="!data.prints.length" class="py-8 text-ink-gray-600 text-caption">У автора пока нет опубликованных принтов.</div>
+      <UiEmptyState
+        v-if="!data.prints.length"
+        icon="i-lucide-image"
+        title="Пока нет принтов"
+        text="У автора ещё нет опубликованных принтов."
+      />
       <div v-else class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mt-3">
-        <div v-for="p in data.prints" :key="p.id" class="border border-ink-gray-200 rounded-lg overflow-hidden group">
+        <div v-for="p in data.prints" :key="p.id" class="border border-ink-gray-200 rounded-lg shadow-sm overflow-hidden group">
           <div class="aspect-square bg-ink-gray-200">
             <img v-if="p.thumbnail_url" :src="p.thumbnail_url" :alt="p.title" class="w-full h-full object-contain group-hover:scale-105 transition-transform">
           </div>

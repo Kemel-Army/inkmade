@@ -40,9 +40,9 @@ async function pay() {
   <section class="max-w-md mx-auto py-10 text-center space-y-6">
     <UiSectionLabel accent>Демо-оплата</UiSectionLabel>
     <h1 class="ink-display text-h2">Оплата заказа</h1>
-    <div class="border border-ink-gray-200 rounded-lg p-6">
-      <p class="text-ink-gray-600">К оплате</p>
-      <p class="text-h1 ink-display text-ink-burgundy">{{ order?.total }} ₸</p>
+    <div class="border border-ink-gray-200 rounded-lg shadow-sm bg-ink-white p-8">
+      <p class="ink-label text-ink-gray-600">К оплате</p>
+      <p class="text-h1 ink-display text-ink-burgundy mt-1">{{ order?.total }} ₸</p>
     </div>
     <UButton color="primary" size="xl" block icon="i-lucide-check" :loading="paying" @click="pay">
       Оплатить (демо)
