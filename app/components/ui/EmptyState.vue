@@ -11,10 +11,15 @@ withDefaults(defineProps<Props>(), { icon: 'i-lucide-inbox' })
 
 <template>
   <div class="py-16 flex flex-col items-center text-center">
-    <div class="size-16 rounded-full bg-ink-gray-50 flex items-center justify-center text-ink-burgundy">
-      <UIcon :name="icon" class="size-8" />
+    <!-- фирменный медальон: бордо-градиент + grain + концентрические кольца -->
+    <div class="relative">
+      <div class="ink-grain relative grid size-20 place-items-center rounded-full bg-linear-to-br from-ink-burgundy-light to-ink-burgundy-dark text-ink-cream shadow-burgundy">
+        <UIcon :name="icon" class="size-9" />
+      </div>
+      <span class="pointer-events-none absolute -inset-2.5 rounded-full border border-ink-burgundy/15" aria-hidden="true" />
+      <span class="pointer-events-none absolute -inset-5 rounded-full border border-ink-burgundy/8" aria-hidden="true" />
     </div>
-    <h3 class="ink-display text-h3 mt-5">{{ title }}</h3>
+    <h3 class="ink-display text-h3 mt-7">{{ title }}</h3>
     <p v-if="text" class="text-ink-gray-600 mt-2 max-w-md">{{ text }}</p>
     <div v-if="$slots.default" class="mt-6"><slot /></div>
   </div>

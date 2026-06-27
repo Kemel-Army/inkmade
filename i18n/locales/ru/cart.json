@@ -8,6 +8,7 @@
       "toCatalog": "В каталог"
     },
     "removeItem": "Удалить {title}",
+    "viewItem": "Открыть {title}",
     "total": "Итого",
     "checkout": "Оформить заказ"
   },

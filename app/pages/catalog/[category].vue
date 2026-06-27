@@ -25,6 +25,21 @@ const { data: products, pending } = await useAsyncData(
   () => listByCategory(category),
 )
 const count = computed(() => products.value?.length ?? 0)
+
+// Клиентская сортировка витрины (данные уже пришли). 'new' = порядок сервера (created desc).
+type SortKey = 'new' | 'price-asc' | 'price-desc'
+const sort = ref<SortKey>('new')
+const sortItems = computed(() => [
+  { value: 'new', label: t('catalog.sort.newest') },
+  { value: 'price-asc', label: t('catalog.sort.priceAsc') },
+  { value: 'price-desc', label: t('catalog.sort.priceDesc') },
+])
+const sorted = computed(() => {
+  const list = products.value ? [...products.value] : []
+  if (sort.value === 'price-asc') list.sort((a, b) => a.base_price - b.base_price)
+  else if (sort.value === 'price-desc') list.sort((a, b) => b.base_price - a.base_price)
+  return list
+})
 </script>
 
 <template>
@@ -37,7 +52,18 @@ const count = computed(() => products.value?.length ?? 0)
           {{ count === 1 ? $t('catalog.category.countOne', { n: count }) : $t('catalog.category.countMany', { n: count }) }}
         </p>
       </div>
-      <UButton to="/catalog" color="neutral" variant="ghost" icon="i-lucide-arrow-left">{{ $t('catalog.category.toCategories') }}</UButton>
+      <div class="flex items-center gap-2 shrink-0">
+        <USelect
+          v-if="!pending && count > 1"
+          v-model="sort"
+          :items="sortItems"
+          size="sm"
+          variant="outline"
+          icon="i-lucide-arrow-up-down"
+          :aria-label="$t('catalog.sort.label')"
+        />
+        <UButton to="/catalog" color="neutral" variant="ghost" icon="i-lucide-arrow-left" class="hidden sm:inline-flex">{{ $t('catalog.category.toCategories') }}</UButton>
+      </div>
     </div>
 
     <!-- Скелетоны загрузки -->
@@ -63,7 +89,7 @@ const count = computed(() => products.value?.length ?? 0)
 
     <!-- Сетка товаров -->
     <div v-else v-auto-animate class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-      <UiReveal v-for="(p, i) in products" :key="p.id" :delay="Math.min(i * 50, 400)">
+      <UiReveal v-for="(p, i) in sorted" :key="p.id" :delay="Math.min(i * 50, 400)">
         <CatalogProductCard :product="p" />
       </UiReveal>
     </div>

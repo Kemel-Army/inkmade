@@ -26,9 +26,19 @@ onMounted(() => cart.load())
           :key="i.id"
           class="flex items-center gap-4 border border-ink-gray-200 rounded-lg p-4 bg-ink-white"
         >
-          <span class="size-10 rounded-full border shrink-0" :style="{ backgroundColor: i.colorHex }" />
+          <NuxtLink
+            :to="i.alias ? `/customize/${i.alias}` : `/product/${i.slug}`"
+            class="group/thumb relative grid size-16 shrink-0 place-items-center overflow-hidden rounded-lg border border-ink-gray-200 bg-ink-gray-50"
+            :aria-label="t('cart.cart.viewItem', { title: i.title })"
+          >
+            <UIcon name="i-lucide-shirt" class="size-7 text-ink-gray-400 transition-transform duration-300 group-hover/thumb:scale-110" />
+            <span class="absolute bottom-1 right-1 size-3.5 rounded-full border border-white shadow-sm" :style="{ backgroundColor: i.colorHex }" />
+          </NuxtLink>
           <div class="flex-1 min-w-0">
-            <p class="font-semibold">{{ i.title }}</p>
+            <NuxtLink
+              :to="i.alias ? `/customize/${i.alias}` : `/product/${i.slug}`"
+              class="font-semibold transition-colors hover:text-ink-burgundy"
+            >{{ i.title }}</NuxtLink>
             <p class="text-caption text-ink-gray-600">{{ i.colorName }} / {{ i.size }}</p>
           </div>
           <div class="flex items-center gap-2">

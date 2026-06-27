@@ -65,6 +65,9 @@ const loop = computed(() => [...props.items, ...props.items])
 <style scoped>
 .marquee {
   overflow: hidden;
+  /* Плавное растворение ленты к краям — premium-деталь, скрывает «обрезку». */
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
 }
 .marquee__track {
   display: flex;
@@ -78,10 +81,14 @@ const loop = computed(() => [...props.items, ...props.items])
 .marquee__item {
   flex: 0 0 auto;
   width: 240px;
+  transition: transform var(--dur-base) var(--ease-out);
 }
 /* На карточке-ссылке оставляем zoom медиа через .app-card-media (общий механизм). */
+.marquee__item:hover {
+  transform: translateY(-6px);
+}
 .marquee__item:hover :where(img) {
-  transform: scale(1.04);
+  transform: scale(1.06);
 }
 @keyframes marquee {
   to {
@@ -93,6 +100,7 @@ const loop = computed(() => [...props.items, ...props.items])
   .marquee__track {
     animation: none;
   }
+  .marquee__item:hover,
   .marquee__item:hover :where(img) {
     transform: none;
   }

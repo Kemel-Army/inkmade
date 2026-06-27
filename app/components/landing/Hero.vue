@@ -47,8 +47,10 @@ onMounted(() => {
 
   ctx = gsap.context(() => {
     const q = (s: string) => Array.from(el.querySelectorAll(s)) as HTMLElement[]
+    const floats = q('[data-hero-float]')
     gsap.set(q('[data-hero-y]'), { y: 24 })
     gsap.set(q('[data-hero-media]'), { scale: 1.06 })
+    gsap.set(floats, { opacity: 0, scale: 0.8, y: 16 })
 
     const tl = gsap.timeline({ defaults: { ease: 'power3.out' } })
     tl.to(q('[data-hero="label"]'), { opacity: 1, y: 0, duration: 0.5 })
@@ -57,13 +59,33 @@ onMounted(() => {
       .to(q('[data-hero="cta"]'), { opacity: 1, y: 0, duration: 0.5, ease: 'back.out(1.6)' }, '-=0.25')
       .to(q('[data-hero="note"]'), { opacity: 1, duration: 0.4 }, '-=0.2')
       .to(q('[data-hero-media]'), { opacity: 1, scale: 1, duration: 0.9 }, 0.15)
+      .to(floats, { opacity: 1, scale: 1, y: 0, duration: 0.7, stagger: 0.14, ease: 'back.out(1.6)' }, 0.55)
 
-    // Параллакс медиа при скролле — только на не-тач (§5.1, §10)
+    // Idle-«парение» декоративных мокапов — стартует после входной анимации (§5.1).
+    floats.forEach((node, i) => {
+      gsap.to(node, {
+        y: '+=14',
+        duration: 3 + i * 0.6,
+        ease: 'sine.inOut',
+        repeat: -1,
+        yoyo: true,
+        delay: 1.5 + i * 0.2,
+      })
+    })
+
+    // Параллакс при скролле — только на не-тач (§5.1, §10): слои на разной глубине.
     if (window.matchMedia('(pointer: fine)').matches) {
       gsap.to(q('[data-hero-media]'), {
         yPercent: -8,
         ease: 'none',
         scrollTrigger: { trigger: el, start: 'top top', end: 'bottom top', scrub: true },
+      })
+      floats.forEach((node, i) => {
+        gsap.to(node, {
+          yPercent: i === 0 ? -22 : -14,
+          ease: 'none',
+          scrollTrigger: { trigger: el, start: 'top top', end: 'bottom top', scrub: true },
+        })
       })
     }
   }, el)
@@ -110,26 +132,34 @@ onBeforeUnmount(() => ctx?.revert())
         </p>
       </div>
 
-      <!-- Правая колонка: медиа -->
+      <!-- Правая колонка: слоистая композиция мокапов -->
       <div class="relative">
-        <div
+        <UiMediaSlot
+          name="hero.main"
+          :src="heroImage"
+          :alt="featured?.title ?? $t('landing.hero.imageAlt')"
+          :priority="true"
+          loading="eager"
+          sizes="(max-width: 1024px) 90vw, 560px"
           data-hero="media"
           data-hero-media
-          class="ink-grain aspect-4/5 rounded-xl overflow-hidden bg-ink-gray-50 shadow-[0_24px_80px_rgba(0,0,0,0.4)] ring-1 ring-white/10"
-        >
-          <NuxtImg
-            v-if="heroImage"
-            :src="heroImage"
-            :alt="featured?.title ?? $t('landing.hero.imageAlt')"
-            class="w-full h-full object-cover"
-            sizes="(max-width: 1024px) 90vw, 560px"
-            loading="eager"
-            fetchpriority="high"
-          />
-          <div v-else class="w-full h-full flex items-center justify-center text-ink-gray-400">
-            <UIcon name="i-lucide-shirt" class="size-20" />
-          </div>
-        </div>
+          class="shadow-[0_24px_80px_rgba(0,0,0,0.4)] ring-1 ring-white/10"
+        />
+        <!-- плавающие акценты-мокапы (декор) -->
+        <UiMediaSlot
+          name="hero.float-1"
+          aria-hidden="true"
+          data-hero-float
+          rounded="rounded-lg"
+          class="hidden sm:block absolute -left-8 bottom-10 w-28 lg:w-36 shadow-[0_16px_40px_rgba(0,0,0,0.35)] ring-1 ring-white/10"
+        />
+        <UiMediaSlot
+          name="hero.float-2"
+          aria-hidden="true"
+          data-hero-float
+          rounded="rounded-lg"
+          class="hidden sm:block absolute -right-6 -top-6 w-24 lg:w-28 shadow-[0_16px_40px_rgba(0,0,0,0.35)] ring-1 ring-white/10"
+        />
       </div>
     </div>
   </section>

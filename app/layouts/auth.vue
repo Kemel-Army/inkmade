@@ -13,9 +13,12 @@ const benefits = computed(() => [
   <div class="min-h-screen grid lg:grid-cols-2 bg-ink-white text-ink-black">
     <!-- брендовая панель (десктоп) -->
     <aside class="hidden lg:flex flex-col justify-between bg-ink-burgundy text-ink-cream p-12 ink-grain relative overflow-hidden">
+      <!-- фоновый визуал (фото/петля) — под бордо-вуалью для читаемости текста -->
+      <UiMediaSlot name="auth.visual" decorative rounded="rounded-none" class="absolute inset-0 z-0 opacity-45" />
+      <div class="absolute inset-0 z-0 bg-linear-to-t from-ink-burgundy via-ink-burgundy/85 to-ink-burgundy/55" />
       <!-- декоративные круги -->
-      <div class="absolute -top-24 -right-24 size-96 rounded-full bg-ink-burgundy-light/30 blur-3xl" />
-      <div class="absolute -bottom-32 -left-16 size-80 rounded-full bg-ink-black/20 blur-3xl" />
+      <div class="absolute -top-24 -right-24 size-96 rounded-full bg-ink-burgundy-light/30 blur-3xl z-0" />
+      <div class="absolute -bottom-32 -left-16 size-80 rounded-full bg-ink-black/20 blur-3xl z-0" />
 
       <NuxtLink to="/" class="ink-logo text-3xl tracking-wide relative z-10">INKMADE</NuxtLink>
 

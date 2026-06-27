@@ -22,7 +22,14 @@
     },
     "card": {
       "customize": "Кастомизировать",
-      "priceFrom": "от {price}"
+      "priceFrom": "от {price}",
+      "new": "Новинка"
+    },
+    "sort": {
+      "label": "Сортировка",
+      "newest": "Сначала новые",
+      "priceAsc": "Сначала дешевле",
+      "priceDesc": "Сначала дороже"
     }
   }
 }

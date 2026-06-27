@@ -9,7 +9,7 @@ export const useCatalog = () => {
   async function listByCategory(category: string) {
     const { data, error } = await supabase
       .from('products')
-      .select('id, slug, alias, title, base_price, category, product_images(url, is_primary)')
+      .select('id, slug, alias, title, base_price, category, created_at, product_images(url, is_primary)')
       .eq('category', category)
       .eq('is_active', true)
       .order('created_at', { ascending: false })
@@ -21,7 +21,7 @@ export const useCatalog = () => {
   async function listAll() {
     const { data, error } = await supabase
       .from('products')
-      .select('id, slug, alias, title, base_price, category, product_images(url, is_primary)')
+      .select('id, slug, alias, title, base_price, category, created_at, product_images(url, is_primary)')
       .eq('is_active', true)
       .order('created_at', { ascending: false })
     if (error) throw error

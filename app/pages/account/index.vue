@@ -55,6 +55,13 @@ async function changePassword() {
     <div class="space-y-6">
       <UiPanel :title="$t('account.overview.personalData')" icon="i-lucide-user">
         <div class="space-y-4">
+          <div class="flex items-center gap-4 border-b border-ink-gray-200 pb-4">
+            <UiAvatar :name="form.full_name" :email="user?.email" size="lg" />
+            <div class="min-w-0">
+              <p class="ink-display text-h3 truncate">{{ form.full_name || user?.email }}</p>
+              <p v-if="form.full_name" class="text-caption text-ink-gray-600 truncate">{{ user?.email }}</p>
+            </div>
+          </div>
           <UFormField :label="$t('account.overview.email')">
             <UInput :model-value="user?.email" disabled class="w-full" />
           </UFormField>
