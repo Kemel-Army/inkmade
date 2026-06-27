@@ -22,7 +22,14 @@
     },
     "card": {
       "customize": "Кастомизациялау",
-      "priceFrom": "{price} бастап"
+      "priceFrom": "{price} бастап",
+      "new": "Жаңа"
+    },
+    "sort": {
+      "label": "Сұрыптау",
+      "newest": "Алдымен жаңалары",
+      "priceAsc": "Алдымен арзаны",
+      "priceDesc": "Алдымен қымбаты"
     }
   }
 }

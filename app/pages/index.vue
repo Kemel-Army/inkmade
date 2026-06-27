@@ -58,10 +58,19 @@ const { data: categories } = await useAsyncData('landing-categories', () => list
         </p>
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
           <UiReveal v-for="(c, i) in categories" :key="c.id" :delay="i * 60">
-            <UiAppCard :to="`/catalog/${c.slug}`" hover class="h-full">
-              <div class="p-6 flex flex-col items-center gap-3 text-center">
-                <UIcon :name="c.icon ?? 'i-lucide-package'" class="size-9 text-ink-burgundy" />
-                <span class="font-semibold">{{ c.title }}</span>
+            <UiAppCard :to="`/catalog/${c.slug}`" hover class="group h-full">
+              <div class="app-card-media">
+                <UiMediaSlot
+                  kind="image"
+                  ratio="4/5"
+                  tone="light"
+                  fit="contain"
+                  :icon="c.icon ?? 'i-lucide-package'"
+                  rounded="rounded-none"
+                />
+              </div>
+              <div class="p-4 text-center">
+                <span class="font-semibold transition-colors group-hover:text-ink-burgundy">{{ c.title }}</span>
               </div>
             </UiAppCard>
           </UiReveal>

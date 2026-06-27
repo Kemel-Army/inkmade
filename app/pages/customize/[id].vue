@@ -14,7 +14,7 @@ if (error.value || !product.value) {
 useHead({ title: t('customize.page.headTitle', { title: product.value.title }) })
 
 const design = useDesign()
-const { material, materialId, placements, productColorHex, toSpec, undo, redo, canUndo, canRedo, colorCount, generatePrintFiles } = design
+const { material, materialId, placements, productColorHex, toSpec, undo, redo, canUndo, canRedo, generatePrintFiles } = design
 const { breakdown } = usePricing()
 const cart = useCart()
 const guestDesigns = useGuestDesigns()
@@ -71,7 +71,8 @@ const selectedVariant = computed(() =>
 
 // количество прямо в конструкторе (§9.1) — раньше менялось только в корзине
 const quantity = ref(1)
-function setQty(n: number) { quantity.value = Math.max(1, Math.min(999, n)) }
+// мобильный доступ к параметрам изделия (bottom-sheet)
+const paramsOpen = ref(false)
 
 // ── 3-зонный редактор: левый тулбар выбирает активный инструмент ──
 type ToolKey = 'print' | 'text' | 'shapes'
@@ -201,6 +202,8 @@ async function onAddToCart() {
       </div>
     </div>
 
+    <CustomizerOnboarding />
+
     <div class="flex flex-col lg:flex-row lg:items-start gap-4">
       <!-- ЛЕВО: тулбар (десктоп — вертикальный, мобайл — горизонтальный) -->
       <nav class="order-2 lg:order-1 flex lg:flex-col gap-1.5 lg:gap-2 overflow-x-auto lg:overflow-visible shrink-0">
@@ -241,55 +244,33 @@ async function onAddToCart() {
               </template>
             </ClientOnly>
           </div>
-          <p class="text-caption text-ink-gray-400 text-center">{{ $t('customize.page.canvasHint') }}</p>
+          <!-- приглашающее пустое состояние / подсказка по работе -->
+          <div v-if="!placements.length" class="text-center">
+            <div class="mx-auto grid size-12 place-items-center rounded-full bg-ink-burgundy/10 text-ink-burgundy customizer-pulse">
+              <UIcon name="i-lucide-image-plus" class="size-6" />
+            </div>
+            <p class="ink-display text-h3 mt-2">{{ $t('customize.page.emptyCanvasTitle') }}</p>
+            <p class="text-caption text-ink-gray-600 mt-1 max-w-xs mx-auto">{{ $t('customize.page.emptyCanvasText') }}</p>
+          </div>
+          <p v-else class="text-caption text-ink-gray-600 text-center">{{ $t('customize.page.canvasHint') }}</p>
         </div>
       </div>
 
       <!-- ПРАВО: настройка товара · слои · итог -->
       <div class="order-4 lg:w-80 shrink-0 space-y-4">
-        <div class="rounded-xl border border-ink-gray-200 bg-ink-white p-4 space-y-4">
-          <UiSectionLabel>{{ $t('customize.page.setup') }}</UiSectionLabel>
-          <div v-if="materialItems.length">
-            <span class="text-caption text-ink-gray-600">{{ $t('customize.page.material') }}</span>
-            <USelect v-model="materialId" :items="materialItems" value-key="value" class="w-full mt-1" />
-            <p v-if="material" class="text-caption text-ink-gray-500 mt-1.5">
-              {{ $t(`domain.printMethod.${material.print_method}`) }} · {{ $t(`domain.printMode.${material.print_mode}`) }}
-            </p>
-            <div v-if="material?.print_method === 'silkscreen'" class="mt-3">
-              <span class="text-caption text-ink-gray-600">{{ $t('customize.page.colorCount') }}</span>
-              <div class="flex items-center gap-2 mt-1">
-                <UButton color="neutral" variant="subtle" size="xs" icon="i-lucide-minus" :disabled="colorCount <= 1" @click="colorCount = Math.max(1, colorCount - 1)" />
-                <span class="min-w-8 text-center font-semibold tabular-nums">{{ colorCount }}</span>
-                <UButton color="neutral" variant="subtle" size="xs" icon="i-lucide-plus" :disabled="colorCount >= 8" @click="colorCount = Math.min(8, colorCount + 1)" />
-              </div>
-            </div>
-          </div>
-          <CustomizerProductColorPicker />
-          <div v-if="sizeVariants.length">
-            <span class="text-caption text-ink-gray-600">{{ $t('customize.page.size') }}</span>
-            <div class="flex flex-wrap gap-2 mt-1">
-              <button
-                v-for="v in sizeVariants" :key="v.id"
-                class="min-w-11 px-3 py-2 rounded-md border text-center transition-colors"
-                :class="v.size === selectedSize ? 'border-ink-burgundy bg-ink-burgundy/5' : 'border-ink-gray-200'"
-                @click="selectedSize = v.size"
-              >{{ v.size }}</button>
-            </div>
-          </div>
-          <div>
-            <span class="text-caption text-ink-gray-600">{{ $t('customize.page.quantity') }}</span>
-            <div class="flex items-center gap-2 mt-1">
-              <UButton color="neutral" variant="subtle" size="sm" icon="i-lucide-minus" :disabled="quantity <= 1" @click="setQty(quantity - 1)" />
-              <span class="min-w-12 text-center text-h4 font-semibold tabular-nums">{{ quantity }}</span>
-              <UButton color="neutral" variant="subtle" size="sm" icon="i-lucide-plus" @click="setQty(quantity + 1)" />
-            </div>
-          </div>
+        <div class="rounded-xl border border-ink-gray-200 bg-ink-white p-4">
+          <CustomizerSetupPanel
+            v-model:size="selectedSize"
+            v-model:quantity="quantity"
+            :material-items="materialItems"
+            :size-variants="sizeVariants"
+          />
         </div>
 
         <!-- слои + инспектор выбранного -->
         <div class="rounded-xl border border-ink-gray-200 bg-ink-white p-4">
           <CustomizerLayerPanel />
-          <p v-if="!placements.length" class="text-caption text-ink-gray-400">{{ $t('customize.page.addPrintOrText') }}</p>
+          <p v-if="!placements.length" class="text-caption text-ink-gray-600">{{ $t('customize.page.addPrintOrText') }}</p>
         </div>
 
         <!-- итог (липкий на десктопе) -->
@@ -299,13 +280,38 @@ async function onAddToCart() {
       </div>
     </div>
 
-    <!-- мобайл: липкий нижний бар цена + CTA -->
+    <!-- мобайл: липкий нижний бар цена + параметры + CTA -->
     <div class="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-ink-white/95 backdrop-blur border-t border-ink-gray-200 px-4 py-3 flex items-center gap-3">
       <div class="min-w-0">
         <div class="text-caption text-ink-gray-500 leading-none">{{ $t('customize.price.total') }}</div>
         <div class="text-h4 font-bold text-ink-burgundy tabular-nums">{{ formatPrice(lineTotal) }}</div>
       </div>
+      <UButton color="neutral" variant="outline" size="lg" icon="i-lucide-sliders-horizontal" :aria-label="$t('customize.page.openParams')" @click="paramsOpen = true" />
       <UiAppButton class="flex-1" block variant="primary" icon="i-lucide-shopping-cart" :loading="submitting" @click="onAddToCart">{{ $t('customize.price.addToCart') }}</UiAppButton>
     </div>
+
+    <!-- мобайл: bottom-sheet параметров изделия (состояние общее с правой панелью) -->
+    <USlideover v-model:open="paramsOpen" side="bottom" :title="$t('customize.page.paramsTitle')">
+      <template #body>
+        <CustomizerSetupPanel
+          v-model:size="selectedSize"
+          v-model:quantity="quantity"
+          :material-items="materialItems"
+          :size-variants="sizeVariants"
+        />
+      </template>
+    </USlideover>
   </section>
 </template>
+
+<style scoped>
+/* Пульс приглашающего пустого состояния холста — бордо-кольцо (гасится reduced-motion). */
+.customizer-pulse {
+  animation: customizer-pulse 2.4s var(--ease-out) infinite;
+}
+@keyframes customizer-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(122, 31, 40, 0.35); }
+  70% { box-shadow: 0 0 0 12px rgba(122, 31, 40, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(122, 31, 40, 0); }
+}
+</style>

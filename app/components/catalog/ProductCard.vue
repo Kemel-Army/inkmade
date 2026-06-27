@@ -11,13 +11,23 @@ interface Product {
   slug: string
   title: string
   base_price: number
+  created_at?: string | null
   product_images?: ProductImage[]
 }
-const props = defineProps<{ product: Product }>()
+// badge — ручная метка (приоритет); иначе авто «Новинка» по дате создания (≤14 дней).
+const props = defineProps<{ product: Product; badge?: string }>()
+const { t } = useI18n()
 
 const images = computed(() => props.product.product_images ?? [])
 const primary = computed(() => images.value.find(i => i.is_primary)?.url ?? images.value[0]?.url)
 const secondary = computed(() => images.value.map(i => i.url).find(u => u !== primary.value))
+
+const isNew = computed(() => {
+  const created = props.product.created_at
+  if (!created) return false
+  return Date.now() - new Date(created).getTime() < 14 * 24 * 60 * 60 * 1000
+})
+const badgeLabel = computed(() => props.badge ?? (isNew.value ? t('catalog.card.new') : null))
 </script>
 
 <template>
@@ -27,8 +37,8 @@ const secondary = computed(() => images.value.map(i => i.url).find(u => u !== pr
         v-if="primary"
         :src="primary"
         :alt="product.title"
-        class="absolute inset-0 w-full h-full object-cover transition-opacity duration-500"
-        :class="secondary ? 'group-hover:opacity-0' : ''"
+        class="absolute inset-0 w-full h-full object-cover transition-[opacity,transform] duration-500"
+        :class="secondary ? 'group-hover:opacity-0' : 'group-hover:scale-[1.04]'"
         sizes="(max-width: 768px) 50vw, 320px"
         loading="lazy"
       />
@@ -36,13 +46,19 @@ const secondary = computed(() => images.value.map(i => i.url).find(u => u !== pr
         v-if="secondary"
         :src="secondary"
         :alt="product.title"
-        class="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+        class="absolute inset-0 w-full h-full object-cover opacity-0 scale-105 group-hover:opacity-100 group-hover:scale-100 transition-[opacity,transform] duration-500"
         sizes="(max-width: 768px) 50vw, 320px"
         loading="lazy"
       />
       <div v-if="!primary" class="absolute inset-0 flex items-center justify-center text-ink-gray-400">
         <UIcon name="i-lucide-image" class="size-10" />
       </div>
+
+      <!-- Бейдж «Новинка» / ручная метка -->
+      <span
+        v-if="badgeLabel"
+        class="absolute top-3 left-3 z-10 ink-label rounded-full bg-ink-burgundy/95 text-ink-cream px-2.5 py-1 shadow-sm backdrop-blur-sm"
+      >{{ badgeLabel }}</span>
 
       <!-- Подсказка действия — проявляется по hover (десктоп) -->
       <div

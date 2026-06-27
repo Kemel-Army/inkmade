@@ -117,20 +117,43 @@ const allImages = computed(() => [...mockupImages.value, ...lifestyleImages.valu
 const activeImage = ref(0)
 // при смене цвета/состава галереи — на первое фото
 watch([selectedColor, allImages], () => { activeImage.value = 0 })
+
+// Зум-лупа к курсору на главном фото (§6.2): только desktop + не reduced-motion.
+const prefersReduced = useReducedMotion()
+const zooming = ref(false)
+const zoomOrigin = ref('50% 50%')
+function canZoom(): boolean {
+  return import.meta.client && !prefersReduced.value && window.matchMedia('(pointer: fine)').matches
+}
+function onZoomMove(e: MouseEvent) {
+  if (!zooming.value) return
+  const r = (e.currentTarget as HTMLElement).getBoundingClientRect()
+  const x = ((e.clientX - r.left) / r.width) * 100
+  const y = ((e.clientY - r.top) / r.height) * 100
+  zoomOrigin.value = `${x}% ${y}%`
+}
 </script>
 
 <template>
-  <section v-if="product" class="grid md:grid-cols-2 gap-10">
-    <!-- галерея (§6.2): крупное фото с zoom по hover + crossfade при смене -->
+  <section v-if="product" class="grid md:grid-cols-2 gap-10 items-start">
+    <!-- галерея (§6.2): крупное фото с зум-лупой к курсору + crossfade при смене -->
     <div class="space-y-3">
-      <div class="group relative aspect-square rounded-lg overflow-hidden bg-ink-gray-50">
+      <div
+        class="group relative aspect-square rounded-lg overflow-hidden bg-ink-gray-50 shadow-sm ring-1 ring-ink-gray-200"
+        :class="zooming ? 'cursor-zoom-in' : ''"
+        @mouseenter="zooming = canZoom()"
+        @mouseleave="zooming = false"
+        @mousemove="onZoomMove"
+      >
         <Transition name="img-fade" mode="out-in">
           <NuxtImg
             v-if="allImages[activeImage]"
             :key="allImages[activeImage]!.id"
             :src="allImages[activeImage]!.url"
             :alt="allImages[activeImage]!.alt || product.title"
-            class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            class="w-full h-full object-cover transition-transform duration-300 ease-out"
+            :class="zooming ? 'scale-[1.9]' : 'scale-100'"
+            :style="{ transformOrigin: zoomOrigin }"
             sizes="(max-width: 768px) 100vw, 560px"
             loading="eager"
           />
@@ -177,8 +200,8 @@ watch([selectedColor, allImages], () => { activeImage.value = 0 })
       </div>
     </div>
 
-    <!-- инфо + выбор -->
-    <div class="space-y-6">
+    <!-- инфо + выбор (липнет на десктопе при прокрутке галереи) -->
+    <div class="space-y-6 md:sticky md:top-24">
       <div>
         <UiSectionLabel accent>{{ product.category }}</UiSectionLabel>
         <h1 class="ink-display text-h1 mt-2">{{ product.title }}</h1>

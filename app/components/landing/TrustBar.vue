@@ -10,12 +10,14 @@ const points = computed(() =>
 <template>
   <section class="w-screen ml-[calc(50%-50vw)] bg-ink-black text-ink-cream/70 border-y border-white/10">
     <div class="mx-auto max-w-(--container-max) px-4 py-4">
-      <ul class="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 ink-label text-center">
-        <template v-for="(p, i) in points" :key="p">
-          <li>{{ p }}</li>
-          <li v-if="i < points.length - 1" aria-hidden="true" class="text-ink-burgundy-light">·</li>
-        </template>
-      </ul>
+      <UiReveal :y="12" :duration="600">
+        <ul class="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 ink-label text-center">
+          <li v-for="p in points" :key="p" class="inline-flex items-center gap-2">
+            <UIcon name="i-lucide-check" class="size-3.5 shrink-0 text-ink-burgundy-light" />
+            <span>{{ p }}</span>
+          </li>
+        </ul>
+      </UiReveal>
     </div>
   </section>
 </template>
