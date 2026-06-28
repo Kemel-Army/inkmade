@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import type { Placement } from '~/composables/useDesign'
+import { DPI_MIN, DPI_TARGET } from '~~/shared/config/zones'
 
 // Панель слоёв + инспектор выбранного элемента (§7.1). Управление порядком слоёв,
 // дублирование/удаление, тонкая настройка текста (выравнивание/обводка/дуга/прозрачность)
 // и удаление фона у растровых принтов (он-девайс, без внешних API).
 const { t } = useI18n()
+
 const {
   product, placements, selectedId, zoneName,
-  removePlacement, duplicatePlacement, reorder, updatePlacement, replaceImageAsset, alignInZone, sizeCm,
+  removePlacement, duplicatePlacement, reorder, updatePlacement, replaceImageAsset, alignInZone, sizeCm, dpiOf,
 } = useDesign()
 
 const ALIGNS_IN: Array<{ dir: 'left' | 'hcenter' | 'right' | 'top' | 'vcenter' | 'bottom'; icon: string }> = [
@@ -29,6 +31,17 @@ function zoneTitle(name: string): string {
 const layers = computed(() => [...placements.value].reverse())
 
 const selected = computed<Placement | undefined>(() => placements.value.find(p => p.id === selectedId.value))
+
+// живой DPI выбранного принта на РЕАЛЬНОМ размере (обновляется при ресайзе).
+// Не блокирует — только индикатор; цвет подсказывает качество печати.
+const selDpi = computed(() => (selected.value ? dpiOf(selected.value) : null))
+const dpiTone = computed(() => {
+  const d = selDpi.value
+  if (d == null) return ''
+  if (d < DPI_MIN) return 'bg-ink-error/10 text-ink-error'
+  if (d < DPI_TARGET) return 'bg-ink-warning/15 text-ink-warning'
+  return 'bg-ink-success/10 text-ink-success'
+})
 
 function selectLayer(p: Placement) {
   // выбор слоя другой зоны переключает активную зону на его
@@ -136,9 +149,21 @@ async function removeBg(p: Placement) {
 
     <!-- инспектор выбранного элемента -->
     <div v-if="selected" class="space-y-3 rounded-lg bg-ink-gray-50 p-3">
-      <!-- размер в см + блокировка -->
+      <!-- размер в см + DPI-индикатор + блокировка -->
       <div class="flex items-center justify-between text-caption text-ink-gray-600">
-        <span class="tabular-nums">{{ sizeCm(selected).w }} × {{ sizeCm(selected).h }} {{ $t('customize.inspector.cm') }}</span>
+        <span class="flex items-center gap-1.5">
+          <span class="tabular-nums">{{ sizeCm(selected).w }} × {{ sizeCm(selected).h }} {{ $t('customize.inspector.cm') }}</span>
+          <span
+            v-if="selected.kind === 'image' && selected.vector"
+            class="rounded px-1.5 py-0.5 text-[10px] font-medium bg-ink-success/10 text-ink-success"
+          >{{ $t('customize.inspector.vector') }}</span>
+          <span
+            v-else-if="selDpi != null"
+            class="rounded px-1.5 py-0.5 text-[10px] font-medium tabular-nums"
+            :class="dpiTone"
+            :title="selDpi < DPI_MIN ? $t('customize.inspector.dpiLowTitle') : undefined"
+          >{{ $t('customize.inspector.dpi', { dpi: selDpi }) }}</span>
+        </span>
         <button
           class="flex items-center gap-1 hover:text-ink-burgundy"
           :class="selected.locked ? 'text-ink-burgundy' : 'text-ink-gray-400'"

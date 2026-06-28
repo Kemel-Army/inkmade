@@ -9,6 +9,9 @@
     },
     "removeItem": "{title} өшіру",
     "viewItem": "{title} ашу",
+    "decrease": "Санын азайту",
+    "clear": "Себетті тазалау",
+    "clearConfirm": "Себетті тазалау керек пе?",
     "total": "Жиыны",
     "checkout": "Тапсырыс беру"
   },
@@ -39,6 +42,7 @@
       "item": "{title} ({size}) ×{qty}",
       "promoPlaceholder": "Промокод",
       "applyPromo": "Қолдану",
+      "clearPromo": "Промокодты алып тастау",
       "promoApplied": "«{code}» коды қолданылды",
       "discount": "Жеңілдік",
       "total": "Жиыны",
@@ -99,6 +103,8 @@
       "toCatalog": "Каталогқа"
     },
     "reorderSuccess": "Себетке қосылды: {count}",
+    "reorderPartial": "Қосылды: {added}. Өткізілді (қоймада жоқ): {skipped}",
+    "reorderNone": "Бұл тауарлар қазір қолжетімсіз",
     "reorderError": "Қайталау мүмкін болмады"
   },
   "status": {

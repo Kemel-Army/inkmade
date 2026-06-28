@@ -40,6 +40,7 @@ export interface Placement {
   // image
   source?: 'upload' | 'library'
   assetUrl?: string
+  sourceFileUrl?: string // оригинал-исходник для оператора (напр. PDF, из которого отрисован PNG)
   printId?: string // id принта из библиотеки (для атрибуции роялти дизайнеру)
   naturalW?: number // пиксели исходника (для DPI/пропорций)
   naturalH?: number
@@ -186,19 +187,22 @@ export const useDesign = () => {
   let seq = 0
   function nextId() { return `pl_${Date.now()}_${seq++}` }
 
-  function addImage(assetUrl: string, naturalW: number, naturalH: number, source: 'upload' | 'library', printId?: string, vector = false) {
+  function addImage(assetUrl: string, naturalW: number, naturalH: number, source: 'upload' | 'library', printId?: string, vector = false, sourceFileUrl?: string): Placement {
     const r = zoneRect.value
+    // защита от деления на ноль: некорректные размеры → 1:1 квадрат (иначе NaN-геометрия)
+    const nW = naturalW > 0 ? naturalW : 1
+    const nH = naturalH > 0 ? naturalH : 1
     // вписываем в зону, сохраняя пропорции, до 70% ширины зоны
     const targetW = r.width * 0.7
-    const scale = targetW / naturalW
+    const scale = targetW / nW
     const w = targetW
-    const h = naturalH * scale
+    const h = nH * scale
     // если по высоте не влезает — пересчитываем от высоты, сохраняя пропорции
-    const fitScale = h > r.height ? r.height / (naturalH * scale) : 1
+    const fitScale = h > r.height ? r.height / h : 1
     const fw = w * fitScale
     const fh = h * fitScale
     const pl: Placement = {
-      id: nextId(), kind: 'image', zone: zoneName.value, source, assetUrl, printId, naturalW, naturalH, vector,
+      id: nextId(), kind: 'image', zone: zoneName.value, source, assetUrl, sourceFileUrl, printId, naturalW, naturalH, vector,
       x: r.x + (r.width - fw) / 2,
       y: r.y + (r.height - fh) / 2,
       width: fw, height: fh, rotation: 0, opacity: 1,
@@ -206,6 +210,21 @@ export const useDesign = () => {
     commit()
     placements.value = [...placements.value, pl]
     selectedId.value = pl.id
+    return pl
+  }
+
+  // Эффективный DPI плейсмента на РЕАЛЬНОМ размере на холсте (а не на макс. размере
+  // изделия). Для индикатора качества в инспекторе/тосте — обновляется при ресайзе.
+  // null = не растровая картинка (вектор/текст/фигура) либо нет данных о пикселях.
+  function dpiOf(p: Placement): number | null {
+    if (p.kind !== 'image' || p.vector || !p.naturalW || !p.naturalH) return null
+    const ppm = pxPerMmForZone(p.zone) || 1
+    const widthMm = p.width / ppm
+    const heightMm = p.height / ppm
+    if (widthMm <= 0 || heightMm <= 0) return null
+    const dpiX = (p.naturalW / widthMm) * 25.4
+    const dpiY = (p.naturalH / heightMm) * 25.4
+    return Math.floor(Math.min(dpiX, dpiY))
   }
 
   function addText(text: string, fontFamily: string, fill: string, fontSize = 48, opts: Partial<Placement> = {}) {
@@ -243,7 +262,7 @@ export const useDesign = () => {
   interface SpecPlacementIn {
     zone?: string; kind?: string; x_mm?: number; y_mm?: number; width_mm?: number; height_mm?: number
     rotation_deg?: number; source?: string; text?: string; font?: string; fill?: string
-    asset_url?: string; natural_w?: number; natural_h?: number; vector?: boolean; opacity?: number
+    asset_url?: string; source_file_url?: string; natural_w?: number; natural_h?: number; vector?: boolean; opacity?: number
     align?: string; stroke?: string; stroke_width?: number; letter_spacing?: number; line_height?: number; curve?: number
     shape_type?: string; pattern?: boolean; pattern_scale?: number; filters?: ImageFilters; locked?: boolean
   }
@@ -295,7 +314,7 @@ export const useDesign = () => {
         next.push({
           id: nextId(), kind: 'image', zone: zn, x, y, width, height, rotation,
           source: p.source === 'library' ? 'library' : 'upload',
-          assetUrl: p.asset_url, vector: !!p.vector, opacity: p.opacity ?? 1,
+          assetUrl: p.asset_url, sourceFileUrl: p.source_file_url, vector: !!p.vector, opacity: p.opacity ?? 1,
           pattern: p.pattern, patternScale: p.pattern_scale, filters: p.filters, locked: p.locked,
           printId: p.source === 'library' ? (spec.print_id ?? undefined) : undefined,
           naturalW: p.natural_w, naturalH: p.natural_h,
@@ -400,7 +419,8 @@ export const useDesign = () => {
           source: p.kind === 'text' ? 'text' : p.kind === 'shape' ? 'shape' : p.source,
           ...(p.kind === 'image'
             ? {
-                asset_url: p.assetUrl, preview_asset_url: p.assetUrl, natural_w: p.naturalW, natural_h: p.naturalH,
+                asset_url: p.assetUrl, preview_asset_url: p.assetUrl, source_file_url: p.sourceFileUrl,
+                natural_w: p.naturalW, natural_h: p.naturalH,
                 vector: !!p.vector, pattern: !!p.pattern, pattern_scale: p.patternScale, filters: p.filters,
               }
             : p.kind === 'shape'
@@ -479,7 +499,7 @@ export const useDesign = () => {
     activePlacements, zonesWithPlacements, pxPerMmForZone,
     canUndo, canRedo, undo, redo,
     init, loadSpec, addImage, addText, addShape, updatePlacement, removePlacement,
-    duplicatePlacement, reorder, replaceImageAsset, alignInZone, sizeCm, toMm, toSpec,
+    duplicatePlacement, reorder, replaceImageAsset, alignInZone, sizeCm, dpiOf, toMm, toSpec,
     registerStage, captureComposition, setCompositionUrl, registerExporter, generatePrintFiles,
   }
 }

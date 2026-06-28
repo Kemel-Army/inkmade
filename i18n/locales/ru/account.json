@@ -61,7 +61,9 @@
       "prints": "Принты",
       "emptyProducts": "Нет избранных товаров.",
       "emptyPrints": "Нет избранных принтов.",
-      "toCatalog": "В каталог"
+      "toCatalog": "В каталог",
+      "removeAria": "Убрать из избранного",
+      "removeError": "Не удалось убрать из избранного"
     },
     "addresses": {
       "label": "Доставка",
@@ -83,7 +85,9 @@
       "updatedTitle": "Адрес обновлён",
       "addedTitle": "Адрес добавлен",
       "errorTitle": "Ошибка",
-      "removeConfirm": "Удалить этот адрес?"
+      "removeConfirm": "Удалить этот адрес?",
+      "makeDefault": "Сделать адресом по умолчанию",
+      "removeAria": "Удалить адрес"
     }
   }
 }

@@ -63,10 +63,13 @@ const failed = ref(false)
 const showFallback = computed(() => asset.value.pending || !asset.value.src || failed.value)
 
 const objectClass = computed(() => (asset.value.fit === 'contain' ? 'object-contain' : 'object-cover'))
+// Заглушка с inset-обводкой, чтобы границы слота читались на ЛЮБОМ фоне (в т.ч. когда
+// тёмная заглушка стоит на бордовой секции — иначе сливалась). Тёмный градиент сделан
+// темнее flat-бордо, чтобы отличаться от секций и на бордо, и на чёрном.
 const toneClass = computed(() =>
   asset.value.tone === 'dark'
-    ? 'from-ink-burgundy via-ink-burgundy to-ink-burgundy-dark text-ink-cream/30'
-    : 'from-ink-gray-50 via-ink-white to-ink-gray-200 text-ink-burgundy/25',
+    ? 'from-ink-burgundy-dark via-ink-black-soft to-ink-black text-ink-cream/40 ring-1 ring-inset ring-white/12'
+    : 'from-ink-gray-50 via-ink-white to-ink-gray-200 text-ink-burgundy/25 ring-1 ring-inset ring-black/5',
 )
 </script>
 

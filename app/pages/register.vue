@@ -24,12 +24,17 @@ const done = ref(false)
 const phoneValid = computed(() => isValidKzPhone(phone.value))
 
 async function onSubmit() {
+  if (loading.value) return // защита от двойного сабмита
   if (!agree.value) {
     toast.add({ title: t('auth.register.consentWarning'), color: 'warning' })
     return
   }
   if (!phoneValid.value) {
     toast.add({ title: t('auth.register.phoneWarningTitle'), description: t('auth.register.phoneWarningDescription'), color: 'warning' })
+    return
+  }
+  if (password.value.length < 6) {
+    toast.add({ title: t('auth.register.passwordWarningTitle'), description: t('auth.register.passwordWarningDescription'), color: 'warning' })
     return
   }
   loading.value = true

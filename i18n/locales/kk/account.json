@@ -61,7 +61,9 @@
       "prints": "Принттер",
       "emptyProducts": "Таңдаулы тауарлар жоқ.",
       "emptyPrints": "Таңдаулы принттер жоқ.",
-      "toCatalog": "Каталогқа"
+      "toCatalog": "Каталогқа",
+      "removeAria": "Таңдаулыдан алып тастау",
+      "removeError": "Таңдаулыдан алып тастау сәтсіз"
     },
     "addresses": {
       "label": "Жеткізу",
@@ -83,7 +85,9 @@
       "updatedTitle": "Мекенжай жаңартылды",
       "addedTitle": "Мекенжай қосылды",
       "errorTitle": "Қате",
-      "removeConfirm": "Осы мекенжайды жою керек пе?"
+      "removeConfirm": "Осы мекенжайды жою керек пе?",
+      "makeDefault": "Әдепкі мекенжай қылу",
+      "removeAria": "Мекенжайды жою"
     }
   }
 }

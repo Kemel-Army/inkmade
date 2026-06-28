@@ -51,6 +51,7 @@ onMounted(() => useAnalytics().viewContent(product.value!.id))
 // избранное (CRM §3.1)
 const { isProductFav, toggleProduct } = useFavorites()
 const { isAuthenticated } = useAuth()
+const toast = useToast()
 const favId = ref<string | null>(null)
 const favBusy = ref(false)
 onMounted(async () => {
@@ -61,9 +62,15 @@ async function onToggleFav() {
   favBusy.value = true
   try {
     const added = await toggleProduct(product.value!.id)
-    favId.value = added ? 'x' : null
+    // храним реальный id строки избранного (не плейсхолдер) — на случай будущей логики
+    favId.value = added ? await isProductFav(product.value!.id) : null
+  } catch (e) {
+    toast.add({ title: t('product.favError'), description: (e as Error).message, color: 'error' })
   } finally { favBusy.value = false }
 }
+
+// есть ли хоть один вариант в наличии (для состояния «нет в наличии»)
+const anyInStock = computed(() => (product.value?.variants ?? []).some(v => v.stock > 0))
 
 const selectedMaterialId = ref(product.value.materials[0]?.id ?? '')
 const selectedMaterial = computed(() =>
@@ -262,17 +269,32 @@ function onZoomMove(e: MouseEvent) {
         </div>
       </div>
 
+      <!-- нет ни одного варианта в наличии -->
+      <UAlert
+        v-if="!anyInStock"
+        color="warning"
+        variant="subtle"
+        icon="i-lucide-package-x"
+        :title="$t('product.outOfStock.title')"
+        :description="$t('product.outOfStock.description')"
+      />
+
       <div class="flex items-center gap-2">
-        <div v-if="product.alias" class="flex-1">
+        <div class="flex-1">
           <UiAppButton
+            v-if="product.alias"
             :to="`/customize/${product.alias}`"
             variant="primary"
             size="xl"
             icon="i-lucide-brush"
+            :disabled="!anyInStock"
             magnetic
             block
           >
             {{ $t('product.goToConstructor') }}
+          </UiAppButton>
+          <UiAppButton v-else variant="secondary" size="xl" block disabled>
+            {{ $t('product.noConstructor') }}
           </UiAppButton>
         </div>
         <UButton

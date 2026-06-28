@@ -3,14 +3,14 @@ import type { Database, Json } from '~/types/database.types'
 import type { PrintMode, PrintMethod } from '~~/shared/config/print-methods'
 import { METHOD_SURCHARGE } from '~~/shared/config/print-methods'
 import { calcPrice } from '~~/shared/config/pricing'
-import { dpiAtMaxSize, DPI_MIN } from '~~/shared/config/zones'
 import { LEGAL } from '~~/shared/config/legal'
 import { computePromoDiscount } from '~~/server/utils/promo'
 import { orderCreateSchema, parseOrThrow } from '~~/server/utils/schemas'
 
-// Создание заказа из корзины НА СЕРВЕРЕ (§9, аудит C7/H2).
-// Цена и DPI проверяются по БД — клиентскому unit_price из localStorage доверять нельзя
-// (подмена → заказ на 1 тенге). paid здесь НЕ ставится (инвариант §10).
+// Создание заказа из корзины НА СЕРВЕРЕ (§9, аудит C7).
+// Цена пересчитывается по БД — клиентскому unit_price из localStorage доверять нельзя
+// (подмена → заказ на 1 тенге). DPI больше не блокирует (принимаем любой эскиз,
+// качество согласуется оператором). paid здесь НЕ ставится (инвариант §10).
 
 export default defineEventHandler(async (event) => {
   const user = await serverSupabaseUser(event)
@@ -69,27 +69,15 @@ export default defineEventHandler(async (event) => {
     // источники файлов должны принадлежать нашему Storage
     assertOwnStorageUrl(it.spec?.composition_url, 'превью')
     for (const f of it.spec?.print_files ?? []) assertOwnStorageUrl(f.url, 'печатный файл')
-    for (const p of placements) assertOwnStorageUrl(p.asset_url, 'принт')
+    for (const p of placements) {
+      assertOwnStorageUrl(p.asset_url, 'принт')
+      assertOwnStorageUrl((p as { source_file_url?: string }).source_file_url, 'исходник')
+    }
 
-    // H2: DPI-валидация от МАКСИМАЛЬНОГО размера изделия (§24 инв.1), серверная.
-    // Векторные принты (PDF/SVG) не имеют растрового DPI — пропускаем (vector=true).
-    const maxPrint = product.max_print_mm as { width?: number; height?: number } | null
-    const hasRaster = placements.some(p => !p.vector && Number(p.natural_w) > 0 && Number(p.natural_h) > 0)
-    // растровый принт без заданного max_print_mm = нельзя гарантировать DPI → отказ
-    if (hasRaster && !(maxPrint?.width && maxPrint?.height)) {
-      throw createError({ statusCode: 400, statusMessage: 'У товара не задан максимальный размер печати' })
-    }
-    if (maxPrint?.width && maxPrint?.height) {
-      for (const p of placements) {
-        if (p.vector) continue
-        if (p.natural_w && p.natural_h) {
-          const dpi = dpiAtMaxSize(p.natural_w, p.natural_h, { width: maxPrint.width, height: maxPrint.height })
-          if (dpi < DPI_MIN) {
-            throw createError({ statusCode: 422, statusMessage: `Низкое разрешение принта (${dpi} DPI, нужно от ${DPI_MIN})` })
-          }
-        }
-      }
-    }
+    // DPI больше НЕ блокирует заказ (бизнес-решение): принимаем эскиз любого
+    // разрешения, при низком качестве оператор связывается с клиентом перед
+    // печатью. Исходник и natural_w/h уходят в spec — оператор видит реальное
+    // качество в CRM. Раньше здесь был жёсткий 422 по DPI (§24 инв.1, снят).
 
     // мультизона (§7.1): печать считается по каждой занятой зоне отдельно.
     // Режим берём ТОЛЬКО из материала по БД — клиентскому spec.print_mode

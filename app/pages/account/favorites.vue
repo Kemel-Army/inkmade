@@ -2,6 +2,8 @@
 // Избранное (CRM §3.1): товары и принты.
 definePageMeta({ layout: 'account', middleware: 'auth' })
 const { listProducts, listPrints, remove } = useFavorites()
+const toast = useToast()
+const { t } = useI18n()
 
 const { data: products, refresh: refreshP, pending: pP } = await useAsyncData('fav-products', () => listProducts())
 const { data: prints, refresh: refreshPr, pending: pPr } = await useAsyncData('fav-prints', () => listPrints())
@@ -10,7 +12,19 @@ function primary(p: { products?: { product_images?: { url: string; is_primary: b
   const imgs = p.products?.product_images ?? []
   return imgs.find(i => i.is_primary)?.url ?? imgs[0]?.url
 }
-async function rm(id: string) { await remove(id); await Promise.all([refreshP(), refreshPr()]) }
+const removingId = ref<string | null>(null)
+async function rm(id: string) {
+  if (removingId.value) return
+  removingId.value = id
+  try {
+    await remove(id)
+    await Promise.all([refreshP(), refreshPr()])
+  } catch (e) {
+    toast.add({ title: t('account.favorites.removeError'), description: (e as Error).message, color: 'error' })
+  } finally {
+    removingId.value = null
+  }
+}
 </script>
 
 <template>
@@ -32,7 +46,7 @@ async function rm(id: string) { await remove(id); await Promise.all([refreshP(),
           </NuxtLink>
           <div class="p-2 flex items-center justify-between gap-1">
             <span class="text-caption font-semibold truncate">{{ f.products?.title }}</span>
-            <UButton size="xs" color="error" variant="ghost" icon="i-lucide-heart-off" @click="rm(f.id)" />
+            <UButton size="xs" color="error" variant="ghost" icon="i-lucide-heart-off" :loading="removingId === f.id" :aria-label="t('account.favorites.removeAria')" @click="rm(f.id)" />
           </div>
         </div>
       </div>
@@ -51,7 +65,7 @@ async function rm(id: string) { await remove(id); await Promise.all([refreshP(),
           </div>
           <div class="p-2 flex items-center justify-between gap-1">
             <span class="text-caption font-semibold truncate">{{ f.print_library?.title }}</span>
-            <UButton size="xs" color="error" variant="ghost" icon="i-lucide-heart-off" @click="rm(f.id)" />
+            <UButton size="xs" color="error" variant="ghost" icon="i-lucide-heart-off" :loading="removingId === f.id" :aria-label="t('account.favorites.removeAria')" @click="rm(f.id)" />
           </div>
         </div>
       </div>

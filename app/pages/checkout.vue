@@ -155,6 +155,7 @@ async function onPay() {
           >{{ $t('cart.checkout.summary.applyPromo') }}</UButton>
           <UButton
             v-else size="sm" color="neutral" variant="ghost" icon="i-lucide-x"
+            :aria-label="$t('cart.checkout.summary.clearPromo')"
             @click="promo.code = ''; promo.discount = 0; promo.applied = ''"
           />
         </div>

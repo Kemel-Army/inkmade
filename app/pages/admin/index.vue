@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Database } from '~/types/database.types'
+import { FEATURES } from '~~/shared/config/features'
 
 // Дашборд админа (§8.2.5): выручка, заказы по статусам, топ товаров, доля брака.
 definePageMeta({ layout: 'admin', middleware: 'admin-role' })
@@ -81,10 +82,10 @@ const fmt = (n: number) => new Intl.NumberFormat('ru-RU').format(n)
       <div class="space-y-8">
         <!-- требует внимания -->
         <div v-if="attention" class="flex flex-wrap gap-2">
-          <NuxtLink v-if="attention.moderation" to="/admin/designers" class="inline-flex items-center gap-1 bg-ink-warning/10 text-ink-warning rounded-full px-3 py-1 text-caption font-semibold">
+          <NuxtLink v-if="FEATURES.designerMarketplace && attention.moderation" to="/admin/designers" class="inline-flex items-center gap-1 bg-ink-warning/10 text-ink-warning rounded-full px-3 py-1 text-caption font-semibold">
             <UIcon name="i-lucide-image" /> {{ $t('admin.dashboard.attention.moderation', { n: attention.moderation }) }}
           </NuxtLink>
-          <NuxtLink v-if="attention.payouts" to="/admin/designers" class="inline-flex items-center gap-1 bg-ink-burgundy/10 text-ink-burgundy rounded-full px-3 py-1 text-caption font-semibold">
+          <NuxtLink v-if="FEATURES.designerMarketplace && attention.payouts" to="/admin/designers" class="inline-flex items-center gap-1 bg-ink-burgundy/10 text-ink-burgundy rounded-full px-3 py-1 text-caption font-semibold">
             <UIcon name="i-lucide-wallet" /> {{ $t('admin.dashboard.attention.payouts', { n: attention.payouts }) }}
           </NuxtLink>
           <NuxtLink v-if="attention.problem" to="/admin/returns" class="inline-flex items-center gap-1 bg-ink-error/10 text-ink-error rounded-full px-3 py-1 text-caption font-semibold">

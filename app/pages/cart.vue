@@ -4,6 +4,16 @@ const { t } = useI18n()
 useHead({ title: () => `${t('cart.cart.headTitle')} — INKMADE` })
 const cart = useCart()
 onMounted(() => cart.load())
+
+// «минус» при количестве 1 — удаляет позицию (иначе кнопка выглядела «мёртвой»).
+function decrement(id: string, qty: number) {
+  if (qty > 1) cart.updateQty(id, qty - 1)
+  else cart.remove(id)
+}
+function clearCart() {
+  if (import.meta.client && !confirm(t('cart.cart.clearConfirm'))) return
+  cart.clear()
+}
 </script>
 
 <template>
@@ -42,7 +52,7 @@ onMounted(() => cart.load())
             <p class="text-caption text-ink-gray-600">{{ i.colorName }} / {{ i.size }}</p>
           </div>
           <div class="flex items-center gap-2">
-            <UButton size="xs" color="neutral" variant="subtle" icon="i-lucide-minus" @click="cart.updateQty(i.id, i.quantity - 1)" />
+            <UButton size="xs" color="neutral" variant="subtle" icon="i-lucide-minus" :aria-label="t('cart.cart.decrease')" @click="decrement(i.id, i.quantity)" />
             <span class="w-6 text-center">{{ i.quantity }}</span>
             <UButton size="xs" color="neutral" variant="subtle" icon="i-lucide-plus" @click="cart.updateQty(i.id, i.quantity + 1)" />
           </div>
@@ -59,6 +69,12 @@ onMounted(() => cart.load())
       <UiAppButton to="/checkout" variant="primary" size="xl" block trailing-icon="i-lucide-arrow-right">
         {{ $t('cart.cart.checkout') }}
       </UiAppButton>
+
+      <div class="text-center">
+        <button class="text-caption text-ink-gray-400 hover:text-ink-error transition-colors" @click="clearCart">
+          {{ $t('cart.cart.clear') }}
+        </button>
+      </div>
     </template>
   </section>
 </template>

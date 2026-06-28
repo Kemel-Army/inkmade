@@ -110,7 +110,7 @@ onMounted(() => {
         </NuxtLink>
         <ClientOnly>
           <UDropdownMenu v-if="isAuthenticated" :items="userMenu" :content="{ align: 'end' }">
-            <button class="hidden md:inline-flex items-center" aria-label="Аккаунт">
+            <button class="hidden md:inline-flex items-center" :aria-label="$t('header.account')">
               <UIcon name="i-lucide-user" class="size-5" />
             </button>
           </UDropdownMenu>

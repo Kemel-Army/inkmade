@@ -3,7 +3,7 @@
 // серверная гарантия — суженный allowed_mime_types бакета design-uploads
 // (SVG исключён — главный вектор XSS в публичном бакете).
 
-export type DetectedKind = 'png' | 'jpeg' | 'webp' | 'gif' | 'avif' | 'pdf' | null
+export type DetectedKind = 'png' | 'jpeg' | 'webp' | 'gif' | 'avif' | 'heic' | 'pdf' | null
 
 export const DEFAULT_MAX_MB = 25
 
@@ -13,8 +13,14 @@ const MIME: Record<Exclude<DetectedKind, null>, string> = {
   webp: 'image/webp',
   gif: 'image/gif',
   avif: 'image/avif',
+  heic: 'image/heic',
   pdf: 'application/pdf',
 }
+
+// ISO-BMFF бренды семейства HEIF/HEIC (фото iPhone). Конвертируем в JPEG на клиенте
+// перед загрузкой — браузеры (кроме Safari) не рисуют HEIC на холсте, а бакет его
+// не принимает. 'mif1'/'msf1' — общий HEIF-контейнер.
+const HEIC_BRANDS = new Set(['heic', 'heix', 'hevc', 'hevx', 'heim', 'heis', 'hevm', 'hevs', 'mif1', 'msf1'])
 
 function ascii(bytes: Uint8Array, start: number, len: number): string {
   let s = ''
@@ -34,10 +40,11 @@ export function detectKind(bytes: Uint8Array): DetectedKind {
   if (starts(bytes, [0x47, 0x49, 0x46, 0x38])) return 'gif'
   if (starts(bytes, [0x25, 0x50, 0x44, 0x46])) return 'pdf' // %PDF
   if (ascii(bytes, 0, 4) === 'RIFF' && ascii(bytes, 8, 4) === 'WEBP') return 'webp'
-  // ISO-BMFF: ....ftyp<brand>, бренды avif/avis/mif1/heic — берём только avif-семейство
+  // ISO-BMFF: ....ftyp<brand>. Разделяем AVIF и HEIC/HEIF по бренду.
   if (ascii(bytes, 4, 4) === 'ftyp') {
     const brand = ascii(bytes, 8, 4)
     if (brand === 'avif' || brand === 'avis') return 'avif'
+    if (HEIC_BRANDS.has(brand)) return 'heic'
   }
   return null
 }
@@ -60,7 +67,7 @@ export interface GuardResult {
  */
 export async function assertSafeUpload(file: File, opts: GuardOptions = {}): Promise<GuardResult> {
   const maxMb = opts.maxMb ?? DEFAULT_MAX_MB
-  const allow = opts.allow ?? ['png', 'jpeg', 'webp', 'gif', 'avif', 'pdf']
+  const allow = opts.allow ?? ['png', 'jpeg', 'webp', 'gif', 'avif', 'heic', 'pdf']
 
   if (file.size === 0) throw new Error('Файл пустой')
   if (file.size > maxMb * 1024 * 1024) throw new Error(`Файл слишком большой. Лимит ${maxMb} МБ.`)
@@ -68,7 +75,7 @@ export async function assertSafeUpload(file: File, opts: GuardOptions = {}): Pro
   const head = new Uint8Array(await file.slice(0, 16).arrayBuffer())
   const kind = detectKind(head)
   if (!kind || !allow.includes(kind)) {
-    throw new Error('Недопустимый формат файла. Разрешены PNG, JPG, WEBP, GIF, AVIF или PDF.')
+    throw new Error('Недопустимый формат файла. Разрешены PNG, JPG, WEBP, GIF, AVIF, HEIC или PDF.')
   }
   return { kind, contentType: MIME[kind] }
 }

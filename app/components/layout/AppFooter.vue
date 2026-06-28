@@ -2,6 +2,8 @@
 // Футер (§5.11): тёмный, структурированный — лого+слоган, колонки ссылок,
 // соцсети, копирайт-дисклеймер. grain для фактуры, mono-лейблы колонок.
 import { LEGAL } from '~~/shared/config/legal'
+// «Личный кабинет» показываем только авторизованным — иначе гостя кидает на логин.
+const { isAuthenticated } = useAuth()
 </script>
 
 <template>
@@ -19,7 +21,9 @@ import { LEGAL } from '~~/shared/config/legal'
         <p class="ink-label text-ink-cream/50">{{ $t('footer.catalogCol') }}</p>
         <NuxtLink to="/catalog" class="footer-link block text-caption">{{ $t('footer.allCategories') }}</NuxtLink>
         <NuxtLink to="/cart" class="footer-link block text-caption">{{ $t('footer.cart') }}</NuxtLink>
-        <NuxtLink to="/account" class="footer-link block text-caption">{{ $t('footer.account') }}</NuxtLink>
+        <ClientOnly>
+          <NuxtLink v-if="isAuthenticated" to="/account" class="footer-link block text-caption">{{ $t('footer.account') }}</NuxtLink>
+        </ClientOnly>
       </div>
       <div class="space-y-2">
         <p class="ink-label text-ink-cream/50">{{ $t('footer.infoCol') }}</p>

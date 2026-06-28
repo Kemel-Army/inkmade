@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // Лендинг (§5). Премиальный стрит-минимализм: ритм тёмных/светлых секций,
 // крупный воздух, появление при скролле (UiReveal). Бизнес-логика — B2C self-service.
+import { FEATURES } from '~~/shared/config/features'
 const { t } = useI18n()
 const { public: { siteUrl } } = useRuntimeConfig()
 const site = (siteUrl as string) || 'https://inkmade-pi.vercel.app'
@@ -38,18 +39,23 @@ const { data: categories } = await useAsyncData('landing-categories', () => list
 
 <template>
   <div>
+    <!-- 1. Hero + полоса доверия: иммерсивный тёмный вход -->
     <LandingHero />
     <LandingTrustBar />
 
-    <!-- лента примеров -->
-    <UiReveal v-if="examples?.length">
-      <section style="padding-block: var(--section-pad)">
-        <LandingExamplesMarquee :items="examples" />
-      </section>
-    </UiReveal>
+    <!-- 2. Конструктор — главный дифференциатор, показываем сразу (тёмная секция) -->
+    <LandingConstructor />
 
-    <!-- каталог-превью «Выбери основу» (§5.4) -->
-    <UiReveal v-if="categories?.length">
+    <!-- 3. «Как это работает»: снимаем страх перед новым механизмом -->
+    <section style="padding-block: var(--section-pad)">
+      <LandingHowItWorks />
+    </section>
+
+    <!-- 4. «Выбери основу» — точка входа в каталог (§5.4).
+         Скрыто, пока категорий < 3: пустая/одиночная сетка выглядит «недоделанной»
+         и вредит премиальности больше, чем отсутствие секции. Вернётся само, как
+         только в БД появятся ≥3 активных категории. -->
+    <UiReveal v-if="(categories?.length ?? 0) >= 3">
       <section style="padding-block: var(--section-pad)" aria-labelledby="cat-heading">
         <UiSectionLabel accent>{{ $t('landing.categories.label') }}</UiSectionLabel>
         <h2 id="cat-heading" class="ink-display text-h2 mt-2">{{ $t('landing.categories.title') }}</h2>
@@ -62,7 +68,7 @@ const { data: categories } = await useAsyncData('landing-categories', () => list
               <div class="app-card-media">
                 <UiMediaSlot
                   kind="image"
-                  ratio="4/5"
+                  ratio="1/1"
                   tone="light"
                   fit="contain"
                   :icon="c.icon ?? 'i-lucide-package'"
@@ -83,24 +89,35 @@ const { data: categories } = await useAsyncData('landing-categories', () => list
       </section>
     </UiReveal>
 
+    <!-- 5. Технологии печати — техническая достоверность (тёмная секция) -->
     <LandingMethods />
 
-    <section style="padding-block: var(--section-pad)">
-      <LandingHowItWorks />
-    </section>
-
+    <!-- 6. «Почему мы» — снимаем возражения -->
     <section style="padding-block: var(--section-pad)">
       <LandingTrust />
     </section>
 
-    <LandingDesignersTeaser />
+    <!-- 7. Галерея примеров — социальное доказательство (если есть товары) -->
+    <UiReveal v-if="examples?.length">
+      <section style="padding-block: var(--section-pad)">
+        <LandingExamplesMarquee :items="examples" />
+      </section>
+    </UiReveal>
 
+    <!-- 8. «Носят INKMADE» — соц-доказательство (UGC + Instagram), placeholder-first -->
+    <LandingSocialProof />
+
+    <!-- Блок дизайнеров скрыт за фиче-флагом (см. shared/config/features.ts) -->
+    <LandingDesignersTeaser v-if="FEATURES.designerMarketplace" />
+
+    <!-- 9. FAQ -->
     <UiReveal>
       <section style="padding-block: var(--section-pad)">
         <LandingFaq />
       </section>
     </UiReveal>
 
+    <!-- 10. Финальный призыв -->
     <LandingFinalCta />
   </div>
 </template>

@@ -20,6 +20,27 @@ function image(p: Example) {
 }
 // Дублируем набор для бесшовной петли (translateX -50%).
 const loop = computed(() => [...props.items, ...props.items])
+
+// Velocity-skew: лента слегка наклоняется от скорости скролла (Lenis) — «инерция»,
+// узнаваемый премиум-приём. Наклоняем ВНЕШНИЙ контейнер, чтобы не конфликтовать с
+// CSS-translate бегущей дорожки внутри. Гейт reduced-motion.
+const marquee = ref<HTMLElement | null>(null)
+let detachVelocity: (() => void) | null = null
+onMounted(() => {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+  const nuxt = useNuxtApp()
+  const lenis = nuxt.$lenis as { on: (e: string, cb: (i: { velocity: number }) => void) => void, off: (e: string, cb: (i: { velocity: number }) => void) => void } | null
+  const gsap = nuxt.$gsap as typeof import('gsap').gsap | undefined
+  const el = marquee.value
+  if (!lenis || !gsap || !el) return
+  const skewTo = gsap.quickTo(el, 'skewX', { duration: 0.5, ease: 'power3' })
+  const onScroll = (i: { velocity: number }) => {
+    skewTo(Math.max(-3, Math.min(3, i.velocity * 0.08)))
+  }
+  lenis.on('scroll', onScroll)
+  detachVelocity = () => lenis.off('scroll', onScroll)
+})
+onBeforeUnmount(() => detachVelocity?.())
 </script>
 
 <template>
@@ -30,7 +51,7 @@ const loop = computed(() => [...props.items, ...props.items])
       {{ $t('landing.examples.subtitle') }}
     </p>
 
-    <div class="marquee w-screen ml-[calc(50%-50vw)] px-4">
+    <div ref="marquee" class="marquee w-screen ml-[calc(50%-50vw)] px-4">
       <div class="marquee__track" :style="{ '--count': items.length }">
         <NuxtLink
           v-for="(p, i) in loop"

@@ -1,25 +1,28 @@
 <script setup lang="ts">
 // Админ-кабинет /admin (§8.2). Роль admin (middleware F0-13). Светлый контекст.
+import { FEATURES } from '~~/shared/config/features'
 const { t } = useI18n()
+// `show: false` скрывает пункт меню вместе с выключенной фичей (роут также 404 через
+// глобальный middleware). Пункты без `show` — постоянное ядро админки.
 const nav = computed(() => [
   { label: t('admin.nav.dashboard'), to: '/admin', icon: 'i-lucide-layout-dashboard' },
-  { label: t('admin.nav.finance'), to: '/admin/finance', icon: 'i-lucide-wallet' },
-  { label: t('admin.nav.designers'), to: '/admin/designers', icon: 'i-lucide-palette' },
+  { label: t('admin.nav.finance'), to: '/admin/finance', icon: 'i-lucide-wallet', show: FEATURES.advancedAdmin },
+  { label: t('admin.nav.designers'), to: '/admin/designers', icon: 'i-lucide-palette', show: FEATURES.designerMarketplace },
   { label: t('admin.nav.orders'), to: '/admin/orders', icon: 'i-lucide-receipt' },
   { label: t('admin.nav.returns'), to: '/admin/returns', icon: 'i-lucide-undo-2' },
   { label: t('admin.nav.categories'), to: '/admin/categories', icon: 'i-lucide-folder-tree' },
   { label: t('admin.nav.products'), to: '/admin/products', icon: 'i-lucide-shirt' },
   { label: t('admin.nav.prints'), to: '/admin/prints', icon: 'i-lucide-image' },
   { label: t('admin.nav.stock'), to: '/admin/stock', icon: 'i-lucide-boxes' },
-  { label: t('admin.nav.pricing'), to: '/admin/pricing', icon: 'i-lucide-tags' },
-  { label: t('admin.nav.content'), to: '/admin/content', icon: 'i-lucide-newspaper' },
-  { label: t('admin.nav.legal'), to: '/admin/legal', icon: 'i-lucide-scale' },
-  { label: t('admin.nav.customers'), to: '/admin/customers', icon: 'i-lucide-user-round-search' },
+  { label: t('admin.nav.pricing'), to: '/admin/pricing', icon: 'i-lucide-tags', show: FEATURES.advancedAdmin },
+  { label: t('admin.nav.content'), to: '/admin/content', icon: 'i-lucide-newspaper', show: FEATURES.advancedAdmin },
+  { label: t('admin.nav.legal'), to: '/admin/legal', icon: 'i-lucide-scale', show: FEATURES.advancedAdmin },
+  { label: t('admin.nav.customers'), to: '/admin/customers', icon: 'i-lucide-user-round-search', show: FEATURES.advancedAdmin },
   { label: t('admin.nav.users'), to: '/admin/users', icon: 'i-lucide-users' },
-  { label: t('admin.nav.leads'), to: '/admin/leads', icon: 'i-lucide-contact' },
-  { label: t('admin.nav.audit'), to: '/admin/audit', icon: 'i-lucide-history' },
+  { label: t('admin.nav.leads'), to: '/admin/leads', icon: 'i-lucide-contact', show: FEATURES.advancedAdmin },
+  { label: t('admin.nav.audit'), to: '/admin/audit', icon: 'i-lucide-history', show: FEATURES.advancedAdmin },
   { label: t('admin.nav.settings'), to: '/admin/settings', icon: 'i-lucide-settings' },
-])
+].filter(i => (i as { show?: boolean }).show !== false))
 const { signOut } = useAuth()
 async function onSignOut() { await signOut(); await navigateTo('/') }
 </script>

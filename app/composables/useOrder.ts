@@ -30,21 +30,23 @@ export const useOrder = () => {
     })
   }
 
-  /** Повтор заказа (CRM §3.2): позиции из старого заказа → в корзину. */
-  async function reorder(orderId: string): Promise<number> {
+  /** Повтор заказа (CRM §3.2): позиции из старого заказа → в корзину.
+   *  Снятые с продажи и распроданные варианты пропускаем (иначе ошибка на checkout). */
+  async function reorder(orderId: string): Promise<{ added: number; skipped: number }> {
     const { data, error } = await supabase
       .from('order_items')
       .select(`quantity, unit_price, print_method,
         designs(spec),
-        variants(id, color_name, color_hex, size, products(id, title, slug, alias))`)
+        variants(id, color_name, color_hex, size, stock, products(id, title, slug, alias, is_active))`)
       .eq('order_id', orderId)
     if (error) throw error
     let added = 0
+    let skipped = 0
     cart.load()
     for (const it of data ?? []) {
       const v = it.variants
       const p = v?.products
-      if (!v || !p) continue
+      if (!v || !p || !p.is_active || v.stock <= 0) { skipped++; continue }
       cart.add({
         productId: p.id,
         slug: p.slug,
@@ -61,7 +63,7 @@ export const useOrder = () => {
       })
       added++
     }
-    return added
+    return { added, skipped }
   }
 
   return { createFromCart, reorder }

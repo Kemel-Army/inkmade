@@ -1,19 +1,37 @@
 <script setup lang="ts">
-import { dpiAtMaxSize, DPI_MIN, DPI_TARGET } from '~~/shared/config/zones'
+import { DPI_MIN, DPI_TARGET } from '~~/shared/config/zones'
 import { assertSafeUpload } from '~/utils/upload-guard'
+import type { Placement } from '~/composables/useDesign'
 
-// Загрузка принта + DPI-валидация на входе (§10, инвариант 1; §5.6).
-// Порог считается от МАКСИМАЛЬНОГО размера изделия (products.max_print_mm).
+// Загрузка принта. DPI больше НЕ блокирует — принимаем любой растр любого
+// разрешения и PDF (рендерим в PNG на клиенте). Низкое качество = предупреждение;
+// оператор согласует с клиентом перед печатью. DPI считается по РЕАЛЬНОМУ размеру
+// принта на холсте (dpiOf) и обновляется в инспекторе при ресайзе.
 const { t } = useI18n()
-const { product, addImage } = useDesign()
+const { addImage, dpiOf } = useDesign()
 const toast = useToast()
 const supabase = useSupabaseClient()
 
 const MAX_FILE_MB = 25
-// растровые форматы + PDF-вектор. SVG исключён (XSS в публичном бакете).
-const ACCEPT = 'image/png,image/jpeg,image/webp,image/gif,image/avif,.pdf'
+// растровые форматы + PDF. SVG исключён (XSS в публичном бакете). PDF принимаем:
+// первую страницу растеризуем в PNG для холста/печати, оригинал храним оператору.
+const ACCEPT = 'image/png,image/jpeg,image/webp,image/gif,image/avif,image/heic,image/heif,application/pdf'
 const busy = ref(false)
 const fileInput = ref<HTMLInputElement | null>(null)
+
+// Единый тост качества по реальному DPI плейсмента (vector/PDF → dpiOf=null → ok).
+function notifyAdded(pl: Placement) {
+  const dpi = dpiOf(pl)
+  if (dpi == null) {
+    toast.add({ title: t('customize.upload.added'), color: 'success' })
+  } else if (dpi < DPI_MIN) {
+    toast.add({ title: t('customize.upload.addedDpi', { dpi }), description: t('customize.upload.lowQualityHint', { dpiTarget: DPI_TARGET }), color: 'warning' })
+  } else if (dpi < DPI_TARGET) {
+    toast.add({ title: t('customize.upload.addedDpi', { dpi }), description: t('customize.upload.targetDpiHint', { dpiTarget: DPI_TARGET }), color: 'warning' })
+  } else {
+    toast.add({ title: t('customize.upload.addedDpi', { dpi }), color: 'success' })
+  }
+}
 
 // Загрузка оригинала в Storage (§13.2): файл должен пережить сессию, иначе
 // оператор не получит исходник для печати. Возвращает постоянный public URL.
@@ -51,45 +69,55 @@ async function onFile(e: Event) {
       return
     }
 
-    // PDF-вектор не теряет качество — DPI не проверяем (§5.6). Флаг vector=true,
-    // чтобы серверная проверка DPI пропустила его (иначе фейковые 1000px → блок).
+    // PDF: растеризуем первую страницу в PNG (для холста и печатного файла),
+    // оригинал PDF тоже грузим в Storage — оператор получит векторный исходник.
     if (guard.kind === 'pdf') {
-      const url = await uploadToStorage(file, guard.contentType)
-      addImage(url, 1000, 1000, 'upload', undefined, true)
-      toast.add({ title: t('customize.upload.added'), color: 'success' })
+      toast.add({ title: t('customize.upload.pdfProcessing'), color: 'info' })
+      const { rasterizePdfFirstPage } = await import('~/utils/pdf-raster')
+      let raster: Awaited<ReturnType<typeof rasterizePdfFirstPage>>
+      try {
+        raster = await rasterizePdfFirstPage(file)
+      } catch (err) {
+        toast.add({ title: t('customize.upload.pdfFailed'), description: err instanceof Error ? err.message : '', color: 'error' })
+        return
+      }
+      // оригинал PDF — оператору (не критично, если бакет/сеть откажут)
+      let pdfUrl: string | undefined
+      try { pdfUrl = await uploadToStorage(file, guard.contentType) } catch { /* без оригинала продолжаем */ }
+      const pngFile = new File([raster.blob], `${file.name.replace(/\.pdf$/i, '')}.png`, { type: 'image/png' })
+      const pngUrl = await uploadToStorage(pngFile, 'image/png')
+      // vector=true только если сохранили оригинал PDF (иначе исходник для печати — PNG)
+      const pl = addImage(pngUrl, raster.width, raster.height, 'upload', undefined, !!pdfUrl, pdfUrl)
+      notifyAdded(pl)
       return
     }
 
-    const objectUrl = URL.createObjectURL(file)
-    // растр: считаем DPI на МАКСИМАЛЬНОМ размере изделия (§10)
+    // HEIC/HEIF (фото iPhone): браузеры не рисуют его на холсте → конвертируем в
+    // JPEG на клиенте и дальше работаем как с обычным растром.
+    let rasterFile = file
+    let rasterContentType = guard.contentType
+    if (guard.kind === 'heic') {
+      toast.add({ title: t('customize.upload.heicProcessing'), color: 'info' })
+      try {
+        const heic2any = (await import('heic2any')).default
+        const out = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.92 })
+        const blob = Array.isArray(out) ? out[0]! : out
+        rasterFile = new File([blob], `${file.name.replace(/\.(heic|heif)$/i, '')}.jpg`, { type: 'image/jpeg' })
+        rasterContentType = 'image/jpeg'
+      } catch (err) {
+        toast.add({ title: t('customize.upload.heicFailed'), description: err instanceof Error ? err.message : '', color: 'error' })
+        return
+      }
+    }
+
+    const objectUrl = URL.createObjectURL(rasterFile)
     const { w, h } = await readImageSize(objectUrl)
-    const maxPrint = product.value?.max_print_mm as { width: number; height: number } | null
-    if (!maxPrint?.width || !maxPrint?.height) {
-      toast.add({ title: t('customize.upload.noSizeData'), description: t('customize.upload.noSizeDataHint'), color: 'error' })
-      URL.revokeObjectURL(objectUrl)
-      return
-    }
-
-    const dpi = dpiAtMaxSize(w, h, maxPrint)
-    if (dpi < DPI_MIN) {
-      // БЛОКИРУЕМ загрузку — иначе поток брака (§10)
-      toast.add({
-        title: t('customize.upload.lowResolution'),
-        description: t('customize.upload.lowResolutionHint', { dpi, dpiMin: DPI_MIN }),
-        color: 'error',
-      })
-      URL.revokeObjectURL(objectUrl)
-      return
-    }
-
-    const url = await uploadToStorage(file, guard.contentType)
     URL.revokeObjectURL(objectUrl)
-    addImage(url, w, h, 'upload')
-    if (dpi < DPI_TARGET) {
-      toast.add({ title: t('customize.upload.addedDpi', { dpi }), description: t('customize.upload.targetDpiHint', { dpiTarget: DPI_TARGET }), color: 'warning' })
-    } else {
-      toast.add({ title: t('customize.upload.addedDpi', { dpi }), color: 'success' })
-    }
+    // DPI больше не блокирует — принимаем любой растр. Оценку качества показываем
+    // по реальному размеру на холсте (notifyAdded → dpiOf), а не worst-case.
+    const url = await uploadToStorage(rasterFile, rasterContentType)
+    const pl = addImage(url, w, h, 'upload')
+    notifyAdded(pl)
   } catch {
     toast.add({ title: t('customize.upload.processFailed'), color: 'error' })
   } finally {
@@ -104,7 +132,7 @@ async function onFile(e: Event) {
     <UButton color="primary" icon="i-lucide-upload" :loading="busy" block @click="fileInput?.click()">{{ $t('customize.upload.button') }}</UButton>
     <input ref="fileInput" type="file" :accept="ACCEPT" class="hidden" @change="onFile">
     <p class="text-caption text-ink-gray-400 mt-2">
-      {{ $t('customize.upload.hint', { maxMb: MAX_FILE_MB, dpiMin: DPI_MIN, dpiTarget: DPI_TARGET }) }}
+      {{ $t('customize.upload.hint', { maxMb: MAX_FILE_MB, dpiTarget: DPI_TARGET }) }}
     </p>
   </div>
 </template>

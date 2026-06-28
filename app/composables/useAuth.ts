@@ -1,4 +1,5 @@
 import type { Profile, UserRole } from '~/types/models'
+import { FEATURES } from '~~/shared/config/features'
 
 // Сессия + роль из profiles (§4, §8.1). Роль — источник доступа к кабинетам.
 // Гостевой поток (§9.1): логин требуется только на checkout и для шаринга/сохранения.
@@ -44,7 +45,7 @@ export const useAuth = () => {
     switch (role.value) {
       case 'admin': return '/admin'
       case 'operator': return '/studio'
-      case 'designer': return '/studio-designer'
+      case 'designer': return FEATURES.designerMarketplace ? '/studio-designer' : '/account'
       default: return '/account'
     }
   })
@@ -53,7 +54,7 @@ export const useAuth = () => {
     switch (r) {
       case 'admin': return '/admin'
       case 'operator': return '/studio'
-      case 'designer': return '/studio-designer'
+      case 'designer': return FEATURES.designerMarketplace ? '/studio-designer' : '/account'
       default: return '/account'
     }
   }

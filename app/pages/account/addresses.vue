@@ -42,11 +42,23 @@ async function onSubmit() {
 }
 async function onRemove(id: string) {
   if (!confirm(t('account.addresses.removeConfirm'))) return
-  await remove(id)
-  if (editingId.value === id) resetForm()
-  await refresh()
+  try {
+    await remove(id)
+    if (editingId.value === id) resetForm()
+    await refresh()
+  } catch (e) {
+    toast.add({ title: t('account.addresses.errorTitle'), description: (e as Error).message, color: 'error' })
+  }
 }
-async function onDefault(id: string) { await setDefault(id); await refresh() }
+async function onDefault(id: string) {
+  try {
+    await setDefault(id)
+    await refresh()
+  } catch (e) {
+    toast.add({ title: t('account.addresses.errorTitle'), description: (e as Error).message, color: 'error' })
+    await refresh() // вернуть UI к фактическому состоянию (setDefault неатомарен)
+  }
+}
 </script>
 
 <template>
@@ -75,9 +87,9 @@ async function onDefault(id: string) { await setDefault(id); await refresh() }
           <p class="text-caption text-ink-gray-600 mt-0.5">{{ a.phone }} · {{ a.city }}, {{ a.address }}</p>
         </div>
         <div class="flex gap-1 shrink-0">
-          <UButton v-if="!a.is_default" size="xs" color="neutral" variant="ghost" icon="i-lucide-star" @click="onDefault(a.id)" />
-          <UButton size="xs" color="neutral" variant="ghost" icon="i-lucide-pencil" @click="startEdit(a)" />
-          <UButton size="xs" color="error" variant="ghost" icon="i-lucide-trash-2" @click="onRemove(a.id)" />
+          <UButton v-if="!a.is_default" size="xs" color="neutral" variant="ghost" icon="i-lucide-star" :aria-label="t('account.addresses.makeDefault')" @click="onDefault(a.id)" />
+          <UButton size="xs" color="neutral" variant="ghost" icon="i-lucide-pencil" :aria-label="t('account.addresses.editAddress')" @click="startEdit(a)" />
+          <UButton size="xs" color="error" variant="ghost" icon="i-lucide-trash-2" :aria-label="t('account.addresses.removeAria')" @click="onRemove(a.id)" />
         </div>
       </div>
     </div>

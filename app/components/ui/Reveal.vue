@@ -13,10 +13,11 @@ const props = withDefaults(defineProps<Props>(), { delay: 0, y: 24, duration: 70
 <template>
   <div
     v-motion
-    :initial="{ opacity: 0, y: props.y }"
+    :initial="{ opacity: 0, y: props.y, filter: 'blur(6px)' }"
     :visible-once="{
       opacity: 1,
       y: 0,
+      filter: 'blur(0px)',
       transition: { duration: props.duration, delay: props.delay },
     }"
   >

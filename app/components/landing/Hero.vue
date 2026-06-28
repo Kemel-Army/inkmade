@@ -3,11 +3,13 @@
 // справа крупное медиа. GSAP timeline входа (§8): лейбл → заголовок по строкам →
 // подзаголовок → кнопки (overshoot) → медиа (scale 1.06→1). Параллакс медиа при
 // скролле. Всё под гейтом reduced-motion; начальное скрытие — класс .hero-anim.
+import { FEATURES } from '~~/shared/config/features'
+
 const { t } = useI18n()
 const supabase = useSupabaseClient()
 const { get } = useSettings()
 
-const [{ data: featured }, { data: content }] = await Promise.all([
+const [{ data: featured }, { data: content }, { data: minPrice }] = await Promise.all([
   useAsyncData('hero-featured', async () => {
     const { data } = await supabase
       .from('products')
@@ -18,15 +20,40 @@ const [{ data: featured }, { data: content }] = await Promise.all([
       .maybeSingle()
     return data
   }),
-  useAsyncData('hero-content', async () => ({
-    title: (await get<string>('landing.hero_title')) ?? null,
-    subtitle: (await get<string>('landing.hero_subtitle')) ?? null,
-  })),
+  // CMS-оверрайд заголовка/подзаголовка применяем ТОЛЬКО при включённом контент-
+  // редакторе (advancedAdmin). Значение в settings — единая строка без локализации,
+  // иначе RU-текст перекрывал бы корректный перевод и на KK. См. shared/config/features.
+  useAsyncData('hero-content', async () => {
+    if (!FEATURES.advancedAdmin) return { title: null, subtitle: null }
+    return {
+      title: (await get<string>('landing.hero_title')) ?? null,
+      subtitle: (await get<string>('landing.hero_subtitle')) ?? null,
+    }
+  }),
+  // Ценовой якорь «от N ₸»: минимальная базовая цена среди активных товаров.
+  // Берём из БД, чтобы цифра всегда была честной и не требовала ручной правки.
+  useAsyncData('hero-min-price', async () => {
+    const { data } = await supabase
+      .from('products')
+      .select('base_price')
+      .eq('is_active', true)
+      .gt('base_price', 0)
+      .order('base_price', { ascending: true })
+      .limit(1)
+      .maybeSingle()
+    return data?.base_price ?? null
+  }),
 ])
 
 const heroTitle = computed(() => content.value?.title ?? t('landing.hero.title'))
 const heroSubtitle = computed(() => content.value?.subtitle ?? t('landing.hero.subtitle'))
 const createTo = computed(() => (featured.value?.alias ? `/customize/${featured.value.alias}` : '/catalog'))
+// «от N ₸» — пусто, если в БД ещё нет цен (тогда note показывает только логистику).
+const priceFrom = computed(() =>
+  minPrice.value
+    ? t('landing.hero.priceFrom', { price: new Intl.NumberFormat('ru-RU').format(minPrice.value) })
+    : '',
+)
 const heroImage = computed(() => {
   const imgs = (featured.value?.product_images ?? []) as { url: string; is_primary: boolean }[]
   return imgs.find(i => i.is_primary)?.url ?? imgs[0]?.url
@@ -47,10 +74,8 @@ onMounted(() => {
 
   ctx = gsap.context(() => {
     const q = (s: string) => Array.from(el.querySelectorAll(s)) as HTMLElement[]
-    const floats = q('[data-hero-float]')
     gsap.set(q('[data-hero-y]'), { y: 24 })
-    gsap.set(q('[data-hero-media]'), { scale: 1.06 })
-    gsap.set(floats, { opacity: 0, scale: 0.8, y: 16 })
+    gsap.set(q('[data-hero-media]'), { scale: 1.04 })
 
     const tl = gsap.timeline({ defaults: { ease: 'power3.out' } })
     tl.to(q('[data-hero="label"]'), { opacity: 1, y: 0, duration: 0.5 })
@@ -59,33 +84,13 @@ onMounted(() => {
       .to(q('[data-hero="cta"]'), { opacity: 1, y: 0, duration: 0.5, ease: 'back.out(1.6)' }, '-=0.25')
       .to(q('[data-hero="note"]'), { opacity: 1, duration: 0.4 }, '-=0.2')
       .to(q('[data-hero-media]'), { opacity: 1, scale: 1, duration: 0.9 }, 0.15)
-      .to(floats, { opacity: 1, scale: 1, y: 0, duration: 0.7, stagger: 0.14, ease: 'back.out(1.6)' }, 0.55)
 
-    // Idle-«парение» декоративных мокапов — стартует после входной анимации (§5.1).
-    floats.forEach((node, i) => {
-      gsap.to(node, {
-        y: '+=14',
-        duration: 3 + i * 0.6,
-        ease: 'sine.inOut',
-        repeat: -1,
-        yoyo: true,
-        delay: 1.5 + i * 0.2,
-      })
-    })
-
-    // Параллакс при скролле — только на не-тач (§5.1, §10): слои на разной глубине.
+    // Лёгкий параллакс медиа при скролле — только на не-тач (§5.1, §10).
     if (window.matchMedia('(pointer: fine)').matches) {
       gsap.to(q('[data-hero-media]'), {
-        yPercent: -8,
+        yPercent: -6,
         ease: 'none',
         scrollTrigger: { trigger: el, start: 'top top', end: 'bottom top', scrub: true },
-      })
-      floats.forEach((node, i) => {
-        gsap.to(node, {
-          yPercent: i === 0 ? -22 : -14,
-          ease: 'none',
-          scrollTrigger: { trigger: el, start: 'top top', end: 'bottom top', scrub: true },
-        })
       })
     }
   }, el)
@@ -99,14 +104,16 @@ onBeforeUnmount(() => ctx?.revert())
     class="ink-grain w-screen ml-[calc(50%-50vw)] bg-ink-burgundy text-ink-cream relative overflow-hidden"
     :class="{ 'hero-anim': animate }"
   >
-    <!-- мягкий градиент глубины -->
+    <!-- мягкий градиент глубины (фолбэк, если WebGL недоступен) -->
     <div class="absolute inset-0 bg-linear-to-br from-ink-burgundy via-ink-burgundy to-ink-burgundy-dark opacity-80" />
-    <div class="absolute -top-24 -right-24 size-96 rounded-full bg-ink-burgundy-light/30 blur-3xl" />
-    <div class="absolute -bottom-32 -left-20 size-80 rounded-full bg-ink-black/30 blur-3xl" />
+    <!-- WebGL «текучий» бордо-фон (Tier 3) — рисуется поверх фолбэка только на десктопе -->
+    <UiShaderBackdrop />
+    <div class="absolute -top-24 -right-24 size-96 rounded-full bg-ink-burgundy-light/30 blur-3xl ink-ambient-a" />
+    <div class="absolute -bottom-32 -left-20 size-80 rounded-full bg-ink-black/30 blur-3xl ink-ambient-b" />
 
     <div
       class="relative mx-auto max-w-(--container-max) px-4 grid lg:grid-cols-2 gap-10 lg:gap-12 items-center"
-      style="padding-block: clamp(96px, 14vw, 160px)"
+      style="padding-block: clamp(56px, 7vw, 96px)"
     >
       <!-- Левая колонка: текст + CTA -->
       <div>
@@ -128,37 +135,26 @@ onBeforeUnmount(() => ctx?.revert())
           </UiAppButton>
         </div>
         <p data-hero="note" class="ink-label text-ink-cream/55 mt-6">
-          {{ $t('landing.hero.note') }}
+          <span v-if="priceFrom" class="text-ink-cream/80">{{ priceFrom }} · </span>{{ $t('landing.hero.note') }}
         </p>
       </div>
 
-      <!-- Правая колонка: слоистая композиция мокапов -->
-      <div class="relative">
+      <!-- Правая колонка: одно медиа в премиальной «галерейной» рамке -->
+      <div
+        data-hero="media"
+        data-hero-media
+        class="relative rounded-2xl bg-white/5 ring-1 ring-white/10 p-2.5 shadow-[0_24px_80px_rgba(0,0,0,0.4)] backdrop-blur-[2px] max-w-[460px] lg:ml-auto"
+      >
         <UiMediaSlot
           name="hero.main"
           :src="heroImage"
+          ratio="4/5"
           :alt="featured?.title ?? $t('landing.hero.imageAlt')"
           :priority="true"
           loading="eager"
-          sizes="(max-width: 1024px) 90vw, 560px"
-          data-hero="media"
-          data-hero-media
-          class="shadow-[0_24px_80px_rgba(0,0,0,0.4)] ring-1 ring-white/10"
-        />
-        <!-- плавающие акценты-мокапы (декор) -->
-        <UiMediaSlot
-          name="hero.float-1"
-          aria-hidden="true"
-          data-hero-float
-          rounded="rounded-lg"
-          class="hidden sm:block absolute -left-8 bottom-10 w-28 lg:w-36 shadow-[0_16px_40px_rgba(0,0,0,0.35)] ring-1 ring-white/10"
-        />
-        <UiMediaSlot
-          name="hero.float-2"
-          aria-hidden="true"
-          data-hero-float
-          rounded="rounded-lg"
-          class="hidden sm:block absolute -right-6 -top-6 w-24 lg:w-28 shadow-[0_16px_40px_rgba(0,0,0,0.35)] ring-1 ring-white/10"
+          sizes="(max-width: 1024px) 90vw, 440px"
+          rounded="rounded-xl"
+          class="max-h-[54vh] lg:max-h-[60vh]"
         />
       </div>
     </div>

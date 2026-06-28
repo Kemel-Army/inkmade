@@ -9,6 +9,9 @@
     },
     "removeItem": "Удалить {title}",
     "viewItem": "Открыть {title}",
+    "decrease": "Уменьшить количество",
+    "clear": "Очистить корзину",
+    "clearConfirm": "Очистить корзину?",
     "total": "Итого",
     "checkout": "Оформить заказ"
   },
@@ -39,6 +42,7 @@
       "item": "{title} ({size}) ×{qty}",
       "promoPlaceholder": "Промокод",
       "applyPromo": "Применить",
+      "clearPromo": "Убрать промокод",
       "promoApplied": "Код «{code}» применён",
       "discount": "Скидка",
       "total": "Итого",
@@ -99,6 +103,8 @@
       "toCatalog": "В каталог"
     },
     "reorderSuccess": "Добавлено в корзину: {count}",
+    "reorderPartial": "Добавлено: {added}. Пропущено (нет в наличии): {skipped}",
+    "reorderNone": "Эти товары сейчас недоступны",
     "reorderError": "Не удалось повторить"
   },
   "status": {

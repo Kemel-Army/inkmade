@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // «Как это работает» (§5.6): 4 шага. Соединительная линия «прорисовывается» по
 // ScrollTrigger (§8). Крупные display-номера, каскадное появление, якорь #how.
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const icons = ['i-lucide-shirt', 'i-lucide-image-plus', 'i-lucide-move', 'i-lucide-package-check']
 const steps = computed(() =>
   icons.map((icon, i) => ({
@@ -40,7 +40,7 @@ onBeforeUnmount(() => ctx?.revert())
 <template>
   <section id="how" ref="root" aria-labelledby="how-heading" style="scroll-margin-top: 96px">
     <UiSectionLabel accent>{{ $t('landing.howItWorks.label') }}</UiSectionLabel>
-    <h2 id="how-heading" class="ink-display text-h2 mt-2 mb-10">{{ $t('landing.howItWorks.title') }}</h2>
+    <h2 id="how-heading" :key="locale" v-reveal-text class="ink-display text-h2 mt-2 mb-10">{{ $t('landing.howItWorks.title') }}</h2>
 
     <!-- Соединительная линия (десктоп) -->
     <div class="hidden lg:block relative h-0.5 mb-8 bg-ink-gray-200 rounded-full overflow-hidden">
@@ -49,8 +49,8 @@ onBeforeUnmount(() => ctx?.revert())
 
     <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
       <UiReveal v-for="(s, i) in steps" :key="s.n" :delay="i * 80">
-        <div class="relative h-full rounded-lg border border-ink-gray-200 p-6 bg-ink-white">
-          <span class="ink-display text-6xl text-ink-cream-dark absolute top-2 right-4 select-none leading-none">
+        <div class="group relative h-full overflow-hidden rounded-xl border border-ink-gray-200/70 p-6 bg-ink-white transition-all duration-300 hover:-translate-y-1 hover:border-ink-burgundy/30 hover:shadow-lg">
+          <span class="ink-display text-7xl text-ink-cream-dark/70 absolute -top-1 right-3 select-none leading-none transition-colors duration-300 group-hover:text-ink-burgundy/15">
             {{ s.n }}
           </span>
           <UIcon :name="s.icon" class="size-8 text-ink-burgundy relative" />

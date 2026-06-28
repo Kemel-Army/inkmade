@@ -36,8 +36,13 @@ const reordering = ref(false)
 async function onReorder() {
   reordering.value = true
   try {
-    const n = await reorder(id)
-    notify.success(t('cart.order.reorderSuccess', { count: n }))
+    const { added, skipped } = await reorder(id)
+    if (added === 0) {
+      notify.error(t('cart.order.reorderNone'))
+      return
+    }
+    if (skipped > 0) notify.success(t('cart.order.reorderPartial', { added, skipped }))
+    else notify.success(t('cart.order.reorderSuccess', { count: added }))
     await navigateTo('/cart')
   } catch (e) {
     notify.error(t('cart.order.reorderError'), (e as Error).message)

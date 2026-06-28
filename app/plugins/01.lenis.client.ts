@@ -2,8 +2,9 @@ import Lenis from 'lenis'
 
 /**
  * Инерционный плавный скролл (§3.1 ТЗ) — ставится первым, максимальный эффект
- * за минимум усилий. Владеет собственным rAF-циклом; GSAP-плагин (02) лишь
- * слушает прокрутку для синхронизации ScrollTrigger.
+ * за минимум усилий. rAF-цикл НЕ запускаем здесь: им управляет тикер GSAP
+ * (02.gsap.client.ts) — единый цикл вместо двух исключает рассинхрон и микро-джанк
+ * на scrub-анимациях (параллакс, draw-линия, count-up).
  *
  * Гейт: при системном `prefers-reduced-motion: reduce` Lenis не инициализируется
  * вовсе — нативный скролл, инстанс не предоставляется (потребители проверяют null).
@@ -17,13 +18,6 @@ export default defineNuxtPlugin(() => {
       easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       smoothWheel: true,
     })
-
-    const instance = lenis
-    function raf(time: number) {
-      instance.raf(time)
-      requestAnimationFrame(raf)
-    }
-    requestAnimationFrame(raf)
   }
 
   return { provide: { lenis } }

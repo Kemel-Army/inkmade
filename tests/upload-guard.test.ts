@@ -31,6 +31,16 @@ describe('detectKind — распознаёт по сигнатуре', () => {
     u.set(ascii('ftyp'), 4); u.set(ascii('avif'), 8)
     expect(detectKind(u)).toBe('avif')
   })
+  it('HEIC (фото iPhone)', () => {
+    const u = new Uint8Array(12)
+    u.set(ascii('ftyp'), 4); u.set(ascii('heic'), 8)
+    expect(detectKind(u)).toBe('heic')
+  })
+  it('HEIF-контейнер (mif1)', () => {
+    const u = new Uint8Array(12)
+    u.set(ascii('ftyp'), 4); u.set(ascii('mif1'), 8)
+    expect(detectKind(u)).toBe('heic')
+  })
 })
 
 describe('detectKind — отвергает опасное/неизвестное', () => {
